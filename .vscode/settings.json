@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.tcc": "c",
+        "cmath": "c",
+        "random": "c",
+        "numbers": "c"
+    }
+}
