@@ -3,6 +3,10 @@
         "*.tcc": "c",
         "cmath": "c",
         "random": "c",
-        "numbers": "c"
+        "numbers": "c",
+        "mtree.h": "c",
+        "stdio.h": "c",
+        "math.h": "c",
+        "cstdlib": "c"
     }
 }
