@@ -37,36 +37,26 @@
 // 12. Se setean los radios cobertores resultantes para cada entrada en este árbol.
 
 // 13. Se retorna T .
-
-
-
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "math.h"
+#include "MTree.c"
+#include "utils/funciones.c"
 
-typedef struct Point {
-    double x; // coordenada x del punto p, tiene doble precisión por enunciado
-    double y; // coordenada y del punto p, tiene doble precisión por enunciado
-} Point;
-
-typedef struct MTree {
-    Point *p; // punto p del nodo
-    double cr; // radio de cobertura del nodo
-    int n; // cantidad de nodos hijos
-    int a; // dirección de acceso
-    struct MTree **children; // nodos hijos
-} MTree;
-
-// B * sizeof(entry) = 4096 bytes, con entry = estructura Ciaccia-Patella (CP) en este archivo
+// B * sizeof(entry) = 4096 bytes, con entry = estructura Entry
 // luego se despeja B = 4096 / sizeof(entry)
-#define B 4096
-# define b B/2
+#define B 4096 / sizeof(Entry)
+#define b B/2
+
+typedef struct {
+    Node *head;
+    int size;
+} Group;
 
 // funcion para crear arreglo de numeros aleatorios en rango [0, n]
 // Función para crear un array de índices aleatorios no repetidos
-int *rndm_indx(int k, int n)
-{
+int *rndm_indx(int k, int n) {
     int *indices = (int *)malloc(k * sizeof(int));
     for (int i = 0; i < k; i++) {
         indices[i] = rand() % n;
@@ -80,124 +70,96 @@ int *rndm_indx(int k, int n)
     return indices;
 }
 
-// funcion de distancia entre 2 puntos (cuadrada)
-double quad_distance(Point p1, Point p2) {
-    return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
-}
-
-// funcion de distancia entre 2 puntos
-double distance(Point p1, Point p2) {
-    return sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
-}
-
-MTree* CP ( Point **points ) {
-    int n = sizeof(*points)/sizeof(Point);
+// Se obtiene un M-Tree balanceado con cada nodo dentro de b y B (excepto raíz)
+MTree* CP (Point **points, int n) {
+    // Paso 1: Caso base
     if (n <= B) {
-        MTree *node = (MTree *)malloc(sizeof(MTree));
-        node->p = *points;
-        node->cr = 0;
-        node->children = NULL;
+        MTree *node = (MTree *) malloc(sizeof(MTree));
+        for (int i = 0; i < n; i++) {
+            Entry * entry = (Entry *) malloc(sizeof(Entry));
+            entry->p = (*points)[i];
+            entry->cr = 0;
+            entry->a = NULL;
+            node->entries[i] = entry;
+        }
         return node;
     }
 
-    // escoger k puntos aleatorios
-    int k = (B < n) ? B : n;
-    Point **points_fk = (Point **)malloc(k * sizeof(Point *));
-    
-    Point **f_groups = (Point **)malloc(k * sizeof(Point *));
-
-
+    int k;
     do {
+        // Paso 2: Seleccionar k puntos aleatorios
+        k = (B < n/B) ? B : n/B;
+        int *indices = rndm_indx(k, n);
 
-    int* indx = rndm_indx(k, n);
-    for (int i = 0; i < k; i++) {
-        points_fk[i] = points[indx[i]];
-    }
-
-    // creacion de k grupos de puntos
-    for (int i = 0; i < k; i++) {
-        f_groups[i] = (Point *)malloc(sizeof(Point));
-    }
-
-    // asignacion de puntos a grupos
-    for (int i=0; i < n; i++) {
-        double min_dist = INFINITY;
-        int min_dist_idx = -1;
-        for (int j=0; j < k; j++) {
-            double dist = quad_distance(*points[i], *points_fk[j]);
-            if (dist < min_dist) {
-                min_dist = dist;
-                min_dist_idx = j;
-            }
+        // Paso 3: Asignar cada punto a su sample más cercano
+        Group *F_k = (Group *)malloc(k * sizeof(Group));
+        for (int i = 0; i < k; i++) {
+            F_k[i].head = NULL;
+            F_k[i].size = 0;
         }
-        *f_groups[min_dist_idx] = *points[i];
-        f_groups[min_dist_idx]++;
-    }
-    
-    // redistribución
-    for (int i=0; i < k; i++) {
-        int len = sizeof(f_groups[i])/sizeof(Point);
-        if (len < b) {
-            Point *p = points_fk[i];
-            if (i < k-1)
-                points_fk[i] = points_fk[i+1];
-            else
-                points_fk[i] = NULL;
-            k--;
-            for (int j=0; j < k; j++){
-                int min_dist = INFINITY;
-                int min_dist_idx = -1;
-                for (int l=0; l < k; l++) {
-                    double dist = quad_distance(f_groups[j][l], *points_fk[l]);
-                    if (dist < min_dist) {
-                        min_dist = dist;
-                        min_dist_idx = l;
+        for (int i = 0; i < n; i++) {
+            double min_dist = INFINITY;
+            int min_idx = -1;
+            for (int j = 0; j < k; j++) {
+                double dist = distance((*points)[i], (*points)[indices[j]]);
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    min_idx = j;
+                }
+            }
+            insert(&F_k[min_idx].head, (*points)[i]);
+            F_k[min_idx].size++;
+        }
+
+        // Paso 4: Redistribución
+        for (int i = 0; i < k; i++) {
+            if (F_k[i].size < b) {
+                // Quitar indice i de indices
+                int *new_indices = (int *)malloc((--k) * sizeof(int));
+                for (int j = 0; j < k; j++) {
+                    if (j < i) {
+                        new_indices[j] = indices[j];
+                    } else {
+                        new_indices[j] = indices[j+1];
                     }
                 }
-                *f_groups[min_dist_idx] = f_groups[i][j];
-            }
-        }
-    }
-
-    } while (sizeof(f_groups)/sizeof(Point) == 1);
-
-    MTree **children = (MTree **)malloc(k * sizeof(MTree *));
-    for (int i=0; i < k; i++) {
-        // CP(f_groups[i]);
-        MTree* tj = CP(f_groups[i]); // recursión de punto 6
-
-        if (tj->children < b){
-            // eliminar points_fk[i] de points
-            for (int j=0; j < n; j++) {
-                if (points_fk[j] == points_fk[i]) {
-                    if (j < n-1)
-                        points_fk[j] = points_fk[j+1];
-                    else
-                        points_fk[j] = NULL;
-                    n--;
-                    k--;
+                free(indices);
+                indices = new_indices;
+                for (Node *node = F_k[i].head; node != NULL; node = node->next) {
+                    double min_dist = INFINITY;
+                    int min_idx = -1;
+                    for (int j = 0; j < k; j++) {
+                        double dist = distance(node->p, (*points)[indices[j]]);
+                        if (dist < min_dist) {
+                            min_dist = dist;
+                            min_idx = j;
+                        }
+                    }
+                    insert(&F_k[min_idx].head, node->p);
+                    F_k[min_idx].size++;
                 }
+                Group *new_F_k = (Group *)malloc(k * sizeof(Group));
+                for (int j = 0; j < k; j++) {
+                    if (j < i) {
+                        new_F_k[j] = F_k[j];
+                    } else {
+                        new_F_k[j] = F_k[j+1];
+                    }
+                }
+                free(F_k);
+                F_k = new_F_k;
+            } else {
+                
             }
-
-            // se trabaja con los nodos hijos
-            for (int j=0; j < tj->n; j++) {
-                children[j] = tj->children[j];
-            }
-
-            // añadir los puntos pertinentes a F
-            for (int j=0; j < tj->n; j++) {
-                points_fk[j] = tj->p;
-            }
-
-            
-
         }
+    } while (k==1); // Paso 5
 
-        children[i] = tj;
-    }
+    // Paso 6: recursión
+    MTree **T_j = (MTree **)malloc(k * sizeof(MTree *));
+
 
     return NULL;
-};
+}
 
 int main() {
     // printf("B = %f\n", B);

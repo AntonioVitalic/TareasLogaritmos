@@ -26,14 +26,14 @@ typedef struct MTree MTree;
 typedef struct Query Query;
 
 struct Point{
-    double x;
-    double y;
+    double x; // Coordenada X del punto
+    double y; // Coordenada Y del punto
 };
 
 struct Entry{
-    Point p;
-    double cr;
-    MTree *a; // tamaño del atributo a de las entradas corresponde al tamaño de un puntero en memoria
+    Point p; // Punto de esta entrada
+    double cr; //Radio de cobertura de todos los puntos del subárbol asociado.
+    MTree *a; //Dirección en disco de subárbol (tamaño corresponde al tamaño de un puntero en memoria)
 };
 
 struct MTree {

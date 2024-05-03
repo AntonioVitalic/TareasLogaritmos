@@ -2,7 +2,7 @@
 #include "stdlib.h"
 #include "math.h"
 
-#define B 4096
+#define B 4096 / sizeof(Entry)
 # define b B/2
 
 typedef struct Point {

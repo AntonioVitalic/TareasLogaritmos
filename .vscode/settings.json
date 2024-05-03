@@ -7,6 +7,16 @@
         "mtree.h": "c",
         "stdio.h": "c",
         "math.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "chrono": "c",
+        "unordered_map": "c",
+        "memory_resource": "c",
+        "algorithm": "c",
+        "functional": "c",
+        "memory": "c",
+        "format": "c",
+        "streambuf": "c",
+        "tuple": "c",
+        "utility": "c"
     }
 }
