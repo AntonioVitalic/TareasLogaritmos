@@ -17,8 +17,17 @@ public:
     double y; // Coordenada Y del punto
 
     Point(double x = 0.0, double y = 0.0) : x(x), y(y) {}
-};
 
+    // Sobrecarga de operadores para comparar puntos
+    bool operator==(const Point& p) const {
+        return x == p.x && y == p.y;
+    }
+
+    bool operator*(const Point& p) const {
+        // distance
+        return (x - p.x, 2)*(x - p.x, 2) + (y - p.y, 2)*(y - p.y, 2);
+    }
+};
 
 class Entry {
 public:
@@ -36,7 +45,7 @@ public:
     MTree() = default;
 
     void insert(const Point& point, double radius) {
-        entries.push_back(make_shared<Entry>(point, radius));
+        entries.push_back(make_shared<Entry>(point, radius)); // push_back para agregar una entrada al final del vector
     }
 
     size_t size() const {
@@ -75,6 +84,36 @@ public:
             }
             return min + 1;
         }
+    }
+
+    vector<pair<Point,shared_ptr<MTree>>> searchByHeights(int h) {
+        vector<pair<Point, shared_ptr<MTree>>> result;
+        // Recorrer todas las entradas y subentradas de ser mayor
+        for (const auto& entry : entries) {
+            if (entry->a) {
+                if (entry->a->maxHeight() == h) {
+                    result.push_back({entry->p, entry->a});
+                } else {
+                    vector<pair<Point, shared_ptr<MTree>>> subResult = entry->a->searchByHeights(h);
+                    result.insert(result.end(), subResult.begin(), subResult.end());
+                }
+            }
+        }
+        return result;
+    }
+
+    void setCR() {
+        for (const auto& entry : entries) {
+            if (entry->a) {
+                entry->cr = entry->a->maxHeight();
+                entry->a->setCR();
+            }
+        }
+    }
+
+    double maxDistance() {
+        double maxDist = 0;
+        
     }
 };
 
