@@ -96,39 +96,93 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <limits>
 #include <algorithm>
-#include "MTree.h"  // Assuming MTree.h is properly set up as described previously
+#include <cstdlib> // Para std::rand y std::srand
+#include <ctime>   // Para std::time (para la semilla del generador aleatorio)
+#include "MTree.cpp"   // Asumiendo que MTree.h está configurado correctamente como se describió anteriormente
+
+const int B = 512 / sizeof(Entry);
+const int b = ceil(B / 2);
 
 class Cluster {
 public:
-    Point medoid;
     std::vector<Point> points;
+
+    Point calculateMedoid() const {
+        Point medoid;
+        double minSum = std::numeric_limits<double>::max();
+
+        for (const auto& p1 : points) {
+            double sum = 0;
+            for (const auto& p2 : points) {
+                sum += std::hypot(p1.x - p2.x, p1.y - p2.y);
+            }
+            if (sum < minSum) {
+                minSum = sum;
+                medoid = p1;
+            }
+        }
+        return medoid;
+    }
+
+    double clusterDistance(const Cluster& other) const {
+        // Basic implementation: minimum distance between any two points in the clusters
+        double minDistance = std::numeric_limits<double>::max();
+        for (const auto& p1 : points) {
+            for (const auto& p2 : other.points) {
+                double distance = p1.distanceTo(p2);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+        }
+        return minDistance;
+    }
 };
 
-double distance(const Point& p1, const Point& p2) {
-    return std::sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
-}
+std::vector<Cluster> ClusterPoints(const std::vector<Point>& points, int b, int B) {
+    std::vector<Cluster> clusters;
 
-Point calculateMedoid(const std::vector<Point>& points) {
-    double minSum = std::numeric_limits<double>::max();
-    Point medoid;
-    for (const auto& p1 : points) {
-        double sum = 0;
-        for (const auto& p2 : points) {
-            sum += distance(p1, p2);
+    // Inicialmente, cada punto es un cluster
+    for (const auto& point : points) {
+        clusters.push_back({std::vector<Point>{point}});
+    }
+
+    bool merged = true;
+    while (merged) {
+        merged = false;
+        double minDistance = std::numeric_limits<double>::max();
+        std::pair<int, int> closestPair;
+
+        // Find the closest pair of clusters that can be merged without exceeding B
+        for (int i = 0; i < clusters.size(); i++) {
+            for (int j = i + 1; j < clusters.size(); j++) {
+                double distance = clusters[i].clusterDistance(clusters[j]);
+                int newSize = clusters[i].points.size() + clusters[j].points.size();
+                if (distance < minDistance && newSize <= B) {
+                    minDistance = distance;
+                    closestPair = {i, j};
+                    merged = true;
+                }
+            }
         }
-        if (sum < minSum) {
-            minSum = sum;
-            medoid = p1;
+
+        if (merged) {
+            // Merge the closest pair of clusters
+            auto& cluster1 = clusters[closestPair.first];
+            auto& cluster2 = clusters[closestPair.second];
+            cluster1.points.insert(cluster1.points.end(), cluster2.points.begin(), cluster2.points.end());
+            cluster1.calculateMedoid();  // Update the medoid
+            clusters.erase(clusters.begin() + closestPair.second);  // Remove the second cluster
         }
     }
-    return medoid;
-}
 
-std::vector<Cluster> ClusterPoints(const std::vector<Point>& points, int b, int B) {
-    // Simplified placeholder for actual clustering logic
-    std::vector<Cluster> clusters;
-    // Logic to split points into clusters goes here
+    // Remove clusters smaller than b
+    clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
+                                  [b](const Cluster& cluster) { return cluster.points.size() < b; }),
+                   clusters.end());
+
     return clusters;
 }
 
@@ -136,16 +190,19 @@ struct Output {
     Point g;
     double r;
     std::shared_ptr<MTree> a;
+
+    Output(const Point& medoid, double radius, std::shared_ptr<MTree> subtree)
+        : g(medoid), r(radius), a(std::move(subtree)) {}
 };
 
-Output OutputHoja(const std::vector<Point>& points) {
-    Point g = calculateMedoid(points);
-    double r = 0;
+Output OutputHoja(const Cluster& cluster) {
     auto a = std::make_shared<MTree>();
+    Point g = cluster.calculateMedoid();
+    double r = 0;
 
-    for (const auto& p : points) {
-        a->insert(p);  // Assuming MTree has an insert function for Point
-        double dist = distance(g, p);
+    for (const auto& p : cluster.points) {
+        a->insert(p, r);  // Asumiendo que MTree tiene una función de inserción para Point
+        double dist = std::hypot(g.x - p.x, g.y - p.y);
         if (dist > r) r = dist;
     }
 
@@ -156,22 +213,25 @@ struct OutputInternal {
     Point G;
     double R;
     std::shared_ptr<MTree> A;
+
+    OutputInternal(const Point& medoid, double radius, std::shared_ptr<MTree> subtree)
+        : G(medoid), R(radius), A(std::move(subtree)) {}
 };
 
 OutputInternal OutputInterno(const std::vector<Output>& outputs) {
     std::vector<Point> medoids;
-    for (const auto& output : outputs) {
-        medoids.push_back(output.g);
-    }
+    std::transform(outputs.begin(), outputs.end(), std::back_inserter(medoids),
+                   [](const Output& output) { return output.g; });
 
-    Point G = calculateMedoid(medoids);
+    Cluster medoidCluster{medoids};
+    Point G = medoidCluster.calculateMedoid();
     double R = 0;
     auto A = std::make_shared<MTree>();
 
     for (const auto& output : outputs) {
-        double extendedRadius = distance(G, output.g) + output.r;
+        double extendedRadius = std::hypot(G.x - output.g.x, G.y - output.g.y) + output.r;
         if (extendedRadius > R) R = extendedRadius;
-        A->insert(output.g, output.r);  // Assuming MTree can insert with radius
+        A->insert(output.g, output.r);
     }
 
     return {G, R, A};
@@ -179,24 +239,49 @@ OutputInternal OutputInterno(const std::vector<Output>& outputs) {
 
 OutputInternal AlgoritmoSS(const std::vector<Point>& points, int b, int B) {
     if (points.size() <= B) {
-        return OutputInterno({OutputHoja(points)});
+        Cluster cluster{points};
+        return OutputInterno({OutputHoja(cluster)});
     }
 
     auto clusters = ClusterPoints(points, b, B);
     std::vector<Output> outputs;
-    for (const auto& cluster : clusters) {
-        outputs.push_back(OutputHoja(cluster.points));
-    }
+    std::transform(clusters.begin(), clusters.end(), std::back_inserter(outputs),
+                   [](const Cluster& cluster) { return OutputHoja(cluster); });
 
     return OutputInterno(outputs);
 }
 
 int main() {
-    std::vector<Point> points = {{0.0, 0.0}, {1.0, 1.0}, {2.0, 2.0}, {3.0, 3.0}, {4.0, 4.0}};
-    int b = 2, B = 5;  // Example thresholds
+    // Inicialización del generador de números aleatorios
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-    auto result = AlgoritmoSS(points, b, B);
-    std::cout << "Resulting MTree has a root medoid at (" << result.G.x << ", " << result.G.y << ") with radius " << result.R << std::endl;
+    // Configuración de los parámetros del algoritmo
+    int n = pow(2, 10);  // Número de puntos
+    // int b = 3;    // Tamaño mínimo de cada cluster
+    // int B = 100;   // Tamaño máximo de cada cluster
+
+    // Crear un conjunto de puntos aleatorios
+    std::vector<Point> points;
+    for (int i = 0; i < n; i++) {
+        double x = static_cast<double>(rand()) / RAND_MAX;  // Número aleatorio entre 0 y 1
+        double y = static_cast<double>(rand()) / RAND_MAX;  // Número aleatorio entre 0 y 1
+        points.push_back(Point(x, y));
+    }
+
+    // Aplicar el algoritmo Sexton-Swinbank
+    auto output = AlgoritmoSS(points, b, B);
+
+    // Imprimir la información del nodo raíz del árbol M resultante
+    std::cout << "Raiz del M-Tree resultante:\n";
+    std::cout << "Punto medoide: (" << output.G.x << ", " << output.G.y << ")\n";
+    std::cout << "Radio cobertor: " << output.R << "\n";
+    std::cout << "Numero de entradas en el arbol: " << output.A->size() << std::endl;
+
+    // Opcional: Visualizar más detalles del árbol resultante
+    for (const auto& entry : output.A->entries) {
+        std::cout << "Punto: (" << entry->p.x << ", " << entry->p.y << ") "
+                  << "Radio: " << entry->cr << std::endl;
+    }
 
     return 0;
 }

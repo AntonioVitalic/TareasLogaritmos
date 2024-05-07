@@ -3,6 +3,8 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <climits>
+
 
 using namespace std;
 
@@ -23,9 +25,13 @@ public:
         return x == p.x && y == p.y;
     }
 
-    bool operator*(const Point& p) const {
+    double operator*(const Point& p) const {
         // distance
-        return (x - p.x, 2)*(x - p.x, 2) + (y - p.y, 2)*(y - p.y, 2);
+        return (x - p.x)*(x - p.x) + (y - p.y)*(y - p.y);
+    }
+
+    double distanceTo(const Point& other) const {
+        return std::sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
     }
 };
 
@@ -102,18 +108,16 @@ public:
         return result;
     }
 
-    void setCR() {
+    double maxDistance(Point p) {
+        // Recorrer hasta las hojas
+        double max = 0;
+        // calcular la distancia entre el punto y cada entrada con su radio
         for (const auto& entry : entries) {
-            if (entry->a) {
-                entry->cr = entry->a->maxHeight();
-                entry->a->setCR();
+            double dist = sqrt(p * entry->p) + entry->cr;
+            if (dist > max) {
+                max = dist;
             }
         }
-    }
-
-    double maxDistance() {
-        double maxDist = 0;
-        
     }
 };
 

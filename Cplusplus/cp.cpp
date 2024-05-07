@@ -47,7 +47,7 @@
 
 using namespace std;
 
-const int B = 4096 / sizeof(Entry);
+const int B = 512 / sizeof(Entry);
 const int b = ceil(B / 2);
 
 vector<int> randomIndices(int k, int n) {
@@ -75,7 +75,7 @@ double distance(const Point& p1, const Point& p2) {
 shared_ptr<MTree> CP(vector<Point>& points) {
     // Paso 1: Si |P| <= B, entonces retornar un árbol M-Tree con las entradas de P.
     if (points.size() <= B) {
-        auto tree = make_shared<MTree>();
+        shared_ptr<MTree> tree = make_shared<MTree>();
         for (const auto& point : points) {
             tree->insert(point, 0.0);
         }
@@ -84,43 +84,59 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
     int n = points.size();
     int k = min(B, n / B);
-    vector<Point> F(k); // F
+    vector<Point> F(k); // F (solo puntos)
     vector<vector<Point>> samples(k); // F_j
     
-    do {
+    while (true) {
         // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
-        F.clear();
+        vector<Point> tmpF; // F (solo puntos)
+        vector<vector<Point>> tmpSamples(k); // F_j
         vector<int> indices = randomIndices(k, n);
         for (int i = 0; i < k; i++) {
-            F[i] = points[indices[i]];
+            tmpF.push_back(points[indices[i]]);
         }
         
         // Paso 3: Agrupar según sample mas cercano
-        samples.clear();
         for (const auto& point : points) {
             double minDist = 1.0;
             int minIndex = 0;
             for (int i = 0; i < k; i++) {
-                double dist = distance(point, F[i]);
+                double dist = point * tmpF[i];
                 if (dist < minDist) {
                     minDist = dist;
                     minIndex = i;
                 }
             }
-            samples[minIndex].push_back(point);
+            tmpSamples[minIndex].push_back(point);
         }
 
-        // Paso 4: Redistribucion de samples según |samples| < b. Si algún F_j es tal que |F_j| < b:
+        // Debug
         for (int i = 0; i < k; i++) {
-            if (samples[i].size() < b) {
+            cout << "Sample " << i << " has " << tmpSamples[i].size() << " points." << endl;
+        }
+        cout<<samples.size()<<endl;
+        // return nullptr;
+
+
+        // Paso 4: Redistribucion de samples según |samples| < b. Si algún F_j es tal que |F_j| < b:
+        for (int i = 0; i < tmpSamples.size();) {
+            if (tmpSamples[i].size() < b) {
+                // cout<<"Sample "<<i<<" has less than b points."<<endl;
+                // return nullptr;
                 // Paso 4.1: Quitar sample p_f_j de F
-                F.erase(F.begin() + i);
+                tmpF.erase(F.begin() + i);
                 // Paso 4.2: Por cada punto p en F_j, buscar el sample más cercano en F
-                for (const auto& point : samples[i]) {
+                vector<Point> toAdd(tmpSamples[i].size());
+                for (const auto& point : tmpSamples[i]) {
+                    toAdd.push_back(point);
+                }
+                tmpSamples.erase(tmpSamples.begin() + i); // Eliminar el sample
+                for (const auto& point : toAdd) {
                     double minDist = 1.0;
                     int minIndex = 0;
-                    for (int j = 0; j < k; j++) {
-                        double dist = distance(point, F[j]);
+                    return nullptr;
+                    for (int j = 0; j < tmpF.size(); j++) {
+                        double dist = point * tmpF[j];
                         if (dist < minDist) {
                             minDist = dist;
                             minIndex = j;
@@ -128,19 +144,41 @@ shared_ptr<MTree> CP(vector<Point>& points) {
                     }
                     samples[minIndex].push_back(point);
                 }
-                samples.erase(samples.begin() + i);
-                i--;  // Ajustar índice del ciclo después de borrar
-                k--;  // Reducir número de samples previos (para no evaluar los samples recién agregados)
-            }
+            } else i++;
         }
 
-    } while (k==1); // Paso 5: Si k=1, entonces volver al paso 2
+        if (tmpSamples.size() != 1) {
+            for (int i = 0; i < tmpF.size(); i++) {
+                F.push_back(tmpF[i]);
+            }
+            for (int i = 0; i < tmpSamples.size(); i++) {
+                samples.push_back(tmpSamples[i]);
+            }
+            break;
+        } // Paso 5: Si |F|=1, entonces volver al paso 2
+    }; 
+
+    cout<<samples.size()<<endl;
+    // Debug
+    for (int i = 0; i < samples.size(); i++) {
+        cout << "Sample " << i << " has " << samples[i].size() << " points." << endl;
+        for (int j = 0; j < samples[i].size(); j++) {
+            cout << "Point " << j << " (" << samples[i][j].x << ", " << samples[i][j].y << ")" << endl;
+        }
+    }
+    return nullptr;
 
     // Paso 6: CP recursivamente en cada sample
     vector<shared_ptr<MTree>> trees; // T_j
     for (auto& sample : samples) {
         trees.push_back(CP(sample));
     }
+
+    // Debug
+    for (int i = 0; i < trees.size(); i++) {
+        cout << "Tree " << i << " has " << trees[i]->size() << " entries." << endl;
+    }
+    return nullptr;
 
     // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
     // se elimina el indice y se reduce k, y se agregan sus subarboles
@@ -193,71 +231,51 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     shared_ptr<MTree> T_sup = CP(F);
 
     // Paso 11: Unir cada Tj en T' a su hoja en T_sup correspondiente al punto pfj en F
-    for (int i = 0; i < treesPrime.size(); i++) {
+    for (int i = 0; i < F.size(); i++) {
         shared_ptr<MTree> tree = treesPrime[i];
         Point p = F[i];
         // Buscar hoja en T_sup correspondiente al punto pfj en F
         for (auto& entry : T_sup->entries) {
             if (entry->p == p) {
                 entry->a = tree;
-                
                 break;
             }
         }
     }
 
     // Paso 12: Setear los radios cobertores resultantes para cada entrada en este arbol    
-    
+    for (auto& entry : T_sup->entries) {
+        entry->cr = T_sup->maxDistance(entry->p);
+    }
 
-//     vector<vector<Point>> clusters;
-//     int k;
-//     do {
-//         k = min(B, static_cast<int>(points.size()) / B);
-//         vector<int> indices = randomIndices(k, points.size());
-
-//         clusters.assign(k, vector<Point>());
-
-//         for (const auto& point : points) {
-//             double minDist = numeric_limits<double>::max();
-//             int minIndex = 0;
-//             for (int i = 0; i < k; i++) {
-//                 double dist = distance(point, points[indices[i]]);
-//                 if (dist < minDist) {
-//                     minDist = dist;
-//                     minIndex = i;
-//                 }
-//             }
-//             clusters[minIndex].push_back(point);
-//         }
-
-//         for (int i = 0; i < k; i++) {
-//             if (clusters[i].size() < b) {
-//                 clusters.erase(clusters.begin() + i);
-//                 indices.erase(indices.begin() + i);
-//                 i--;  // Adjust loop index after erase
-//                 k--;  // Reduce number of clusters
-//             }
-//         }
-//     } while (k == 1);  // Repeat if there's only one cluster left
-
-//     vector<shared_ptr<MTree>> trees;
-//     for (auto& cluster : clusters) {
-//         trees.push_back(CP(cluster));
-//     }
-
-//     // Assuming further steps to combine these trees as per the algorithm description
-//     return nullptr;  // This should be replaced with the actual tree combining logic
-// }
+    // Paso 13: Retornar T
+    return T_sup;
 }
 
 int main() {
-    vector<Point> points = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}};
-    auto result = CP(points);
-    if (result) {
-        cout << "Tree has " << result->size() << " entries." << endl;
-    }
-    
+    // vector<Point> points = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}};
+    // auto result = CP(points);
+    // if (result) {
+    //     cout << "Tree has " << result->size() << " entries." << endl;
+    // }
 
-    cout << sizeof(Entry) << endl;
+    // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
+    int n = pow(2, 6);
+    vector<Point> points(n);
+    for (int i = 0; i < n; i++) {
+        points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
+                     static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
+    }
+    // quitar elementos de un conjunto de puntos
+    // points.erase(points.begin() + 1);
+    // cout<<points.size()<<endl;
+
+    auto result = CP(points);
+    
+    // for (auto& entry : result->entries) {
+    //     cout << "Point (" << entry->p.x << ", " << entry->p.y << ") with radius " << entry->cr << endl;
+    // }
+
+    // cout << sizeof(Entry) << endl;
     return 0;
 }
