@@ -84,8 +84,8 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
     int n = points.size();
     int k = min(B, n / B);
-    vector<Point> F(k); // F (solo puntos)
-    vector<vector<Point>> samples(k); // F_j
+    vector<Point> F; // F (solo puntos)
+    vector<vector<Point>> samples; // F_j
     
     while (true) {
         // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
@@ -100,7 +100,7 @@ shared_ptr<MTree> CP(vector<Point>& points) {
         for (const auto& point : points) {
             double minDist = 1.0;
             int minIndex = 0;
-            for (int i = 0; i < k; i++) {
+            for (int i = 0; i < tmpF.size(); i++) {
                 double dist = point * tmpF[i];
                 if (dist < minDist) {
                     minDist = dist;
@@ -110,31 +110,18 @@ shared_ptr<MTree> CP(vector<Point>& points) {
             tmpSamples[minIndex].push_back(point);
         }
 
-        // Debug
-        for (int i = 0; i < k; i++) {
-            cout << "Sample " << i << " has " << tmpSamples[i].size() << " points." << endl;
-        }
-        cout<<samples.size()<<endl;
-        // return nullptr;
-
-
         // Paso 4: Redistribucion de samples según |samples| < b. Si algún F_j es tal que |F_j| < b:
         for (int i = 0; i < tmpSamples.size();) {
             if (tmpSamples[i].size() < b) {
-                // cout<<"Sample "<<i<<" has less than b points."<<endl;
-                // return nullptr;
                 // Paso 4.1: Quitar sample p_f_j de F
-                tmpF.erase(F.begin() + i);
+                tmpF.erase(tmpF.begin() + i);
                 // Paso 4.2: Por cada punto p en F_j, buscar el sample más cercano en F
-                vector<Point> toAdd(tmpSamples[i].size());
-                for (const auto& point : tmpSamples[i]) {
-                    toAdd.push_back(point);
-                }
+                vector<Point> toAdd = tmpSamples[i];
                 tmpSamples.erase(tmpSamples.begin() + i); // Eliminar el sample
+                
                 for (const auto& point : toAdd) {
                     double minDist = 1.0;
                     int minIndex = 0;
-                    return nullptr;
                     for (int j = 0; j < tmpF.size(); j++) {
                         double dist = point * tmpF[j];
                         if (dist < minDist) {
@@ -142,60 +129,36 @@ shared_ptr<MTree> CP(vector<Point>& points) {
                             minIndex = j;
                         }
                     }
-                    samples[minIndex].push_back(point);
+                    tmpSamples[minIndex].push_back(point);
                 }
             } else i++;
         }
-
-        if (tmpSamples.size() != 1) {
-            for (int i = 0; i < tmpF.size(); i++) {
-                F.push_back(tmpF[i]);
-            }
-            for (int i = 0; i < tmpSamples.size(); i++) {
-                samples.push_back(tmpSamples[i]);
-            }
-            break;
-        } // Paso 5: Si |F|=1, entonces volver al paso 2
-    }; 
-
-    cout<<samples.size()<<endl;
-    // Debug
-    for (int i = 0; i < samples.size(); i++) {
-        cout << "Sample " << i << " has " << samples[i].size() << " points." << endl;
-        for (int j = 0; j < samples[i].size(); j++) {
-            cout << "Point " << j << " (" << samples[i][j].x << ", " << samples[i][j].y << ")" << endl;
-        }
-    }
-    return nullptr;
+        if (tmpSamples.size() == 1) continue; // Paso 5: Si |F|=1, entonces volver al paso 2
+        F = tmpF;
+        samples = tmpSamples;
+        break;
+    };
 
     // Paso 6: CP recursivamente en cada sample
     vector<shared_ptr<MTree>> trees; // T_j
-    for (auto& sample : samples) {
-        trees.push_back(CP(sample));
-    }
+    for (int i = 0; i < samples.size(); i++) {
+        shared_ptr<MTree> cp = CP(samples[i]);
+        cout << "Tree " << i << " has " << cp->size() << " entries." << endl;
 
-    // Debug
-    for (int i = 0; i < trees.size(); i++) {
-        cout << "Tree " << i << " has " << trees[i]->size() << " entries." << endl;
-    }
-    return nullptr;
-
-    // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
-    // se elimina el indice y se reduce k, y se agregan sus subarboles
-    // a los trees y los puntos a F
-    for (int i = 0; i < k; i++) {
-        if (trees[i]->size() < b) {
+        // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
+        if (cp->size() < b) {
+            cout << "Removing root with size " << cp->size() << endl;
+            // Se elimina el punto en F asociado a este arbol
+            F.erase(F.begin() + i);
             // Agregar subarboles a trees
-            for (auto& entry : trees[i]->entries) {
+            for (auto& entry : cp->entries) {
                 shared_ptr<MTree> subtree = entry->a;
                 Point p = entry->p;
                 trees.push_back(subtree);
                 F.push_back(p);
             }
-            samples.erase(samples.begin() + i);
-            trees.erase(trees.begin() + i);
-            i--;  // Ajustar índice del ciclo después de borrar
-            k--;  // Reducir número de samples previos (para no evaluar los arboles recien agregados)
+        } else {
+            trees.push_back(cp);
         }
     }
 
