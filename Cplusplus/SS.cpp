@@ -277,11 +277,9 @@ int main() {
     std::cout << "Radio cobertor: " << output.R << "\n";
     std::cout << "Numero de entradas en el arbol: " << output.A->size() << std::endl;
 
-    // Opcional: Visualizar más detalles del árbol resultante
-    for (const auto& entry : output.A->entries) {
-        std::cout << "Punto: (" << entry->p.x << ", " << entry->p.y << ") "
-                  << "Radio: " << entry->cr << std::endl;
-    }
+    // Imprimir detalles del árbol
+    cout << "Estructura del árbol MTree:\n";
+    output.A->printTree();
 
     return 0;
 }
