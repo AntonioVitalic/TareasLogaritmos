@@ -50,7 +50,7 @@ using namespace std;
 const int B = 512 / sizeof(Entry);
 const int b = ceil(B / 2);
 
-vector<int> randomIndices(int k, int n) {
+vector<int> randomIndices(int k, int n) { //k indices y rango n
     vector<int> indices;
     for (int i = 0; i < k; i++) {
         int ind = rand() % (n-1);
@@ -83,7 +83,10 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     }
     // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
     int n = points.size();
-    int k = min(B, n / B);
+    int k = min(B, (int)(ceil((double)n / B)));
+    cout<<"B: "<<B<<endl;
+    cout<<"n: "<<n<<endl;
+    cout << "k: " << k << endl;
     vector<Point> F; // F (solo puntos)
     vector<vector<Point>> samples; // F_j
     
@@ -139,7 +142,7 @@ shared_ptr<MTree> CP(vector<Point>& points) {
         break;
     };
 
-    // Paso 6: CP recursivamente en cada sample
+    /*
     vector<shared_ptr<MTree>> trees; // T_j
     for (int i = 0; i < samples.size(); i++) {
         shared_ptr<MTree> cp = CP(samples[i]);
@@ -160,6 +163,35 @@ shared_ptr<MTree> CP(vector<Point>& points) {
         } else {
             trees.push_back(cp);
         }
+    }
+    */
+    // Paso 6: CP recursivamente en cada sample
+    cout<<"Samples size: "<<samples.size()<<endl;
+    for (int i = 0; i < samples.size(); i++) {
+        cout<<"Sample "<<i<<" has "<<samples[i].size()<<" entries."<<endl;
+    }
+    vector<shared_ptr<MTree>> trees;
+    for (int i = 0; i < samples.size(); i++) {
+        shared_ptr<MTree> cp = CP(samples[i]);
+        trees.push_back(cp);
+        cout<<"Tree "<<i<<" has "<<cp->size()<<" entries."<<endl;
+    }
+
+    cout<<"Trees size: "<<trees.size()<<endl;
+    // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
+    for (int i = 0; i < trees.size();) {
+        if (trees[i]->size() < b) {
+            // Se elimina el punto en F asociado a este arbol
+            F.erase(F.begin() + i);
+            // Agregar subarboles a trees
+            for (auto& entry : trees[i]->entries) {
+                shared_ptr<MTree> subtree = entry->a;
+                Point p = entry->p;
+                trees.push_back(subtree);
+                F.push_back(p);
+            }
+            trees.erase(trees.begin() + i);
+        } else i++;
     }
 
     // Paso 8: Balanceamiento. Calcular h (altura minima de los trees)
