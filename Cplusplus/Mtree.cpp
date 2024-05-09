@@ -118,6 +118,17 @@ public:
                 max = dist;
             }
         }
+        return max;
+    }
+
+    void printTree(int depth = 0) const {
+        for (const auto& entry : entries) {
+            cout << string(depth * 2, ' ') << "Punto: (" << entry->p.x << ", " << entry->p.y
+                 << "), Radio: " << entry->cr << "\n";
+            if (entry->a) {
+                entry->a->printTree(depth + 1);
+            }
+        }
     }
 };
 
