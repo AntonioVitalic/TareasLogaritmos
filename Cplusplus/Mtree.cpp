@@ -35,6 +35,14 @@ public:
     }
 };
 
+class Query {
+public:
+    Point p;
+    double r;
+
+    Query(const Point& point, double radius) : p(point), r(radius) {}
+};
+
 class Entry {
 public:
     Point p;            // Punto de esta entrada
@@ -89,7 +97,7 @@ public:
         double max = 0;
         // calcular la distancia entre el punto y cada entrada con su radio
         for (const auto& entry : entries) {
-            double dist = sqrt(p * entry->p) + entry->cr;
+            double dist = p.distanceTo(entry->p) + entry->cr;
             if (dist > max) {
                 max = dist;
             }
@@ -112,14 +120,23 @@ public:
             }
         }
     }
-};
 
-class Query {
-public:
-    Point p;
-    double r;
-
-    Query(const Point& point, double radius) : p(point), r(radius) {}
+    vector<Point> search(const Query& q) {
+        vector<Point> result;
+        for (const auto& entry : entries) {
+            if (entry->a) { // Nodo interno
+                if (entry->p.distanceTo(q.p) <= entry->cr + q.r) {
+                    vector<Point> subResult = entry->a->search(q);
+                    result.insert(result.end(), subResult.begin(), subResult.end());
+                }
+            } else { // Nodo externo
+                if (entry->p.distanceTo(q.p) <= q.r) {
+                    result.push_back(entry->p);
+                }
+            }
+        }
+        return result;
+    }
 };
 
 // int main() {

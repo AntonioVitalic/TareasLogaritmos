@@ -197,18 +197,13 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     for (int i = 0; i < F.size(); i++) {
         shared_ptr<MTree> tree = treesPrime[i];
         Point p = F[i];
-        // Buscar hoja en T_sup correspondiente al punto pfj en F
-        for (auto& entry : T_sup->entries) {
-            if (entry->p == p) {
-                entry->a = tree;
-                break;
-            }
-        }
+        T_sup->entries[i]->a = tree;
     }
 
     // Paso 12: Setear los radios cobertores resultantes para cada entrada en este arbol    
     for (auto& entry : T_sup->entries) {
-        entry->cr = T_sup->maxDistance(entry->p);
+        double cr = entry->a->maxDistance(entry->p);
+        entry->cr = cr;
     }
 
     // Paso 13: Retornar T
@@ -237,6 +232,14 @@ int main() {
 
     cout<<endl;
     result->printTree();
-    cout<<result->size()<<endl;
+
+    vector<Point> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
+
+    cout<<"Search result: "<<endl;
+    for (const auto& point : searchResult) {
+        cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
+    }
+
+    cout<<"Tree root size: "<<result->size()<<endl;
     return 0;
 }
