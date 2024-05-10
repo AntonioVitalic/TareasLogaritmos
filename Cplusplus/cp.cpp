@@ -84,9 +84,6 @@ shared_ptr<MTree> CP(vector<Point>& points) {
     // Paso 2: Elegir k = min(B, n / B) puntos aleatorios de P, y crear samples
     int n = points.size();
     int k = min(B, (int)(ceil((double)n / B)));
-    cout<<"B: "<<B<<endl;
-    cout<<"n: "<<n<<endl;
-    cout << "k: " << k << endl;
     vector<Point> F; // F (solo puntos)
     vector<vector<Point>> samples; // F_j
     
@@ -142,42 +139,13 @@ shared_ptr<MTree> CP(vector<Point>& points) {
         break;
     };
 
-    /*
-    vector<shared_ptr<MTree>> trees; // T_j
-    for (int i = 0; i < samples.size(); i++) {
-        shared_ptr<MTree> cp = CP(samples[i]);
-        cout << "Tree " << i << " has " << cp->size() << " entries." << endl;
-
-        // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
-        if (cp->size() < b) {
-            cout << "Removing root with size " << cp->size() << endl;
-            // Se elimina el punto en F asociado a este arbol
-            F.erase(F.begin() + i);
-            // Agregar subarboles a trees
-            for (auto& entry : cp->entries) {
-                shared_ptr<MTree> subtree = entry->a;
-                Point p = entry->p;
-                trees.push_back(subtree);
-                F.push_back(p);
-            }
-        } else {
-            trees.push_back(cp);
-        }
-    }
-    */
     // Paso 6: CP recursivamente en cada sample
-    cout<<"Samples size: "<<samples.size()<<endl;
-    for (int i = 0; i < samples.size(); i++) {
-        cout<<"Sample "<<i<<" has "<<samples[i].size()<<" entries."<<endl;
-    }
     vector<shared_ptr<MTree>> trees;
     for (int i = 0; i < samples.size(); i++) {
         shared_ptr<MTree> cp = CP(samples[i]);
         trees.push_back(cp);
-        cout<<"Tree "<<i<<" has "<<cp->size()<<" entries."<<endl;
     }
 
-    cout<<"Trees size: "<<trees.size()<<endl;
     // Paso 7: Si la raiz es tamaño menor que b, se quita esa raiz
     for (int i = 0; i < trees.size();) {
         if (trees[i]->size() < b) {
@@ -196,16 +164,16 @@ shared_ptr<MTree> CP(vector<Point>& points) {
 
     // Paso 8: Balanceamiento. Calcular h (altura minima de los trees)
     // Se define T' vacio
-    vector<shared_ptr<MTree>> treesPrime(trees.size()); // T'
+    vector<shared_ptr<MTree>> treesPrime; // T'
     int h = INT_MAX;
     for (const auto& tree: trees) {
-        int local_min = tree->minHeight();
+        int local_min = tree->getHeight();
         h = min(h, local_min);
     }
 
     // Paso 9: por cada Tj, si su altura es igual a h, se añade a T'
     for (int i = 0; i < trees.size(); i++) {
-        if (trees[i]->maxHeight() == h) { // Si su altura es igual a h se añade a T'
+        if (trees[i]->getHeight() == h) { // Si su altura es igual a h se añade a T'
             treesPrime.push_back(trees[i]);
         } else { // Si no se cumple:
             // Paso 9.1: Se borra el punto en F
@@ -265,12 +233,10 @@ int main() {
     // points.erase(points.begin() + 1);
     // cout<<points.size()<<endl;
 
-    auto result = CP(points);
-    
-    // for (auto& entry : result->entries) {
-    //     cout << "Point (" << entry->p.x << ", " << entry->p.y << ") with radius " << entry->cr << endl;
-    // }
+    shared_ptr<MTree> result = CP(points);
 
-    // cout << sizeof(Entry) << endl;
+    cout<<endl;
+    result->printTree();
+    cout<<result->size()<<endl;
     return 0;
 }

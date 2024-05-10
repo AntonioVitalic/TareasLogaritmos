@@ -58,37 +58,13 @@ public:
         return entries.size();
     }
 
-    int maxHeight() {
-        if (entries.empty()) {
-            return 0;
-        } else {
-            int max = 0;
-            for (const auto& entry : entries) {
-                if (entry->a) {
-                    int height = entry->a->maxHeight();
-                    if (height > max) {
-                        max = height;
-                    }
-                }
+    int getHeight() {
+        for (const auto& entry : entries) {
+            if (entry->a) {
+                return entry->a->getHeight() + 1;
+            } else {
+                return 1;
             }
-            return max + 1;
-        }
-    }
-
-    int minHeight() {
-        if (entries.empty()) {
-            return 0;
-        } else {
-            int min = INT_MAX;
-            for (const auto& entry : entries) {
-                if (entry->a) {
-                    int height = entry->a->minHeight();
-                    if (height < min) {
-                        min = height;
-                    }
-                }
-            }
-            return min + 1;
         }
     }
 
@@ -97,7 +73,7 @@ public:
         // Recorrer todas las entradas y subentradas de ser mayor
         for (const auto& entry : entries) {
             if (entry->a) {
-                if (entry->a->maxHeight() == h) {
+                if (entry->a->getHeight() == h) {
                     result.push_back({entry->p, entry->a});
                 } else {
                     vector<pair<Point, shared_ptr<MTree>>> subResult = entry->a->searchByHeights(h);
@@ -122,9 +98,15 @@ public:
     }
 
     void printTree(int depth = 0) const {
+        for (int i = 0; i < depth; i++) {
+                cout<<"  ";
+        }
+        cout<<"Depth: "<<depth<<endl;
         for (const auto& entry : entries) {
-            cout << string(depth * 2, ' ') << "Punto: (" << entry->p.x << ", " << entry->p.y
-                 << "), Radio: " << entry->cr << "\n";
+            for (int i = 0; i < depth; i++) {
+                cout<<"  ";
+            }
+            cout<<"Point ("<<entry->p.x<<", "<<entry->p.y<<") with radius "<<entry->cr<<endl;
             if (entry->a) {
                 entry->a->printTree(depth + 1);
             }
