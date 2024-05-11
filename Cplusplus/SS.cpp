@@ -111,7 +111,8 @@
 #include "MTree.cpp"
 
 const int B = 512 / sizeof(Entry);
-const int b = ceil(B / 2);
+const int b = (int) ceil((double) B / 2);
+using namespace std;
 
 class Cluster {
 public:
@@ -201,7 +202,7 @@ std::pair<Cluster, Cluster> applyMinMaxSplit(Cluster &cluster1, Cluster &cluster
     cluster1 = newCluster1;
     cluster2 = newCluster2;
 
-    return std::make_pair(newCluster1, newCluster2);
+    return std::make_pair(cluster1, cluster2);
 }
 
 // • AlgoritmoCluster: retorna un conjunto de clusters de tamaño entre b y B.
@@ -353,9 +354,7 @@ Entry AlgoritmoOutputHoja(const std::vector<Point>& points) {
     C_in.points = points;
     Point g = C_in.calculateMedoid();
     double maxRadius = 0;
-    double r = 0;
     vector<Entry> C; // C = {} (el que corresponderá al nodo hoja).
-    C.reserve(C_in.points.size()); // Reservar espacio para los puntos nuevos
 
     // Paso 2: Por cada p ∈ C_in: Añadimos (p, null, null) a C. Seteamos r = max(r, dist(g, p))
     for (const auto& point : C_in.points) {
@@ -367,9 +366,17 @@ Entry AlgoritmoOutputHoja(const std::vector<Point>& points) {
        }
 
     }
-    r = maxRadius; // Paso 2: Seteamos r = max(r, dist(g, p))
-    // Paso 4: Retornamos la tupla (g, r, a) con r = maxRadius
-     return Entry(g, r); // Paso 3: Guardamos el puntero a C
+    double r = maxRadius; // Paso 2: Seteamos r = max(r, dist(g, p))
+    // Crear una instancia de MTree y agregar las entradas
+    auto tree = make_shared<MTree>();
+    for (auto& entry : C) {
+        tree->insert(entry.p, entry.cr);
+    }
+
+    // Paso 3 y 4: Configurar y retornar Entry con el árbol
+    Entry ret(g, r);
+    ret.a = tree;
+    return ret;
 }
 
 // • AlgoritmoOutputInterno: Retorna (G, R, A) donde G es el medoide primario del conjunto de 
@@ -395,31 +402,29 @@ Entry AlgoritmoOutputHoja(const std::vector<Point>& points) {
 //     Entry(const Point& point, double radius) : p(point), cr(radius), a(nullptr) {}
 // };
 
-Entry AlgoritmoOutputInterno(const std::vector<Entry>& points) {
+Entry AlgoritmoOutputInterno(const std::vector<Entry>& C_mra) {
     // Paso 1: Sea C_in = {g | ∃ (g, r, a) ∈ C_mra}. G el medoide primario de C_in.
-    Cluster C_mra;
-    for (const auto& entry : points) {
-        C_mra.points.push_back(entry.p);
+    Cluster C_in;
+    for (const auto& entry : C_mra) {
+        C_in.points.push_back(entry.p);
     }
-    Point G = C_mra.calculateMedoid();
+    Point G = C_in.calculateMedoid();
     double maxRadius = 0;
-    double R = 0;
-    vector<Entry> C; // C = {}, el que corresponderá a un nodo interno.
-    C.reserve(points.size()); // Reservar espacio para los puntos nuevos
+    auto C = make_shared<MTree>(); // C = {}, el que corresponderá a un nodo interno.
 
     // Paso 2: Por cada (g, r, a) ∈ C_mra: Añadir (g, r, a) a C. Se setea R = max(R, dist(G, g) + r)
-    for (const auto& entry : points) {
-        C.push_back(entry);
-        double dist = G.distanceTo(entry.p); // Aquí asumimos que no se necesita sumar entry.r, ya que entry.r no existe
+    for (const auto& entry : C_mra) {
+        C->insert(entry.p, entry.cr);
+        double dist = G.distanceTo(entry.p) + entry.cr; // entry.p es el punto g
         if (dist > maxRadius) {
             maxRadius = dist;
         }
     }
-    R = maxRadius; // Paso 2: Seteamos R = max(R, dist(G, g) + r)
+    double R = maxRadius; // Paso 2: Seteamos R = max(R, dist(G, g) + r)
     // Paso 3: Guardamos el puntero a C como A.
 
     Entry ret = Entry(G, R);
-    ret.a = make_shared<MTree>();
+    ret.a = C; // ret.a = A
     
     // Paso 4: Retornamos la tupla (G, R, A)
     return ret;
@@ -448,67 +453,60 @@ Entry AlgoritmoOutputInterno(const std::vector<Entry>& points) {
 // Paso 5. Sea (g, r, a) = OutputInterno(C)
 //
 // Paso 6. Se retorna a
-vector<Entry> AlgoritmoSS(const std::vector<Point>& C_in) {
+shared_ptr<MTree> AlgoritmoSS(const std::vector<Point>& C_in) {
     // Paso 1: Verificar si el tamaño de C_in es menor o igual a B.
-    vector<Entry> final_result;
     if (C_in.size() <= B) {
         // Se define (g, r, a) = OutputHoja(C_in) y se retorna a.
-        Entry entry_paso_1 = AlgoritmoOutputHoja(C_in);
-        final_result.push_back(entry_paso_1);
-    } else {
+        return AlgoritmoOutputHoja(C_in).a;
+    } 
 
-        // Paso 2: Sea C_out = Cluster(C_in). Sea C = {}.
-        vector<Cluster> C_out = AlgoritmoCluster(C_in);
-        vector<shared_ptr<Entry>> C;
+    // Paso 2: Sea C_out = Cluster(C_in). Sea C = {}.
+    vector<Cluster> C_out = AlgoritmoCluster(C_in);
+    vector<shared_ptr<Entry>> C;
 
-        // Paso 3: Por cada c ∈ C_out: Se añade OutputHoja(c) a C
-        for (const auto& c : C_out) {
-            C.push_back(make_shared<Entry>(AlgoritmoOutputHoja(c.points)));
-        }
+    // Paso 3: Por cada c ∈ C_out: Se añade OutputHoja(c) a C
+    for (const auto& c : C_out) {
+        C.push_back(make_shared<Entry>(AlgoritmoOutputHoja(c.points)));
+    }
 
-        // Paso 4: Mientras |C| > B
-        while (C.size() > B) {
-            // Paso 4.1: Sea C_in = {g|(g, r, a) ∈ C}. Sea C_out = Cluster(C_in). Sea C_mra = {}.
-            vector<Point> C_in_paso_4;
-            for (int i = 0; i < C.size(); i++) {
-                C_in_paso_4.push_back(C[i]->p);
-            }
-            vector<Cluster> C_out = AlgoritmoCluster(C_in_paso_4);
-            vector<Entry> C_mra;
-
-            // Paso 4.2: Por cada c ∈ C_out: Sea s = {(g, r, a)|(g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
-            for (int i = 0; i < C_out.size(); i++) {
-                vector<Entry> s;
-                Cluster c_i = C_out[i];
-                for (int j = 0; j < C.size(); j++) {
-                    if (std::find(c_i.points.begin(), c_i.points.end(), C[j]->p) != c_i.points.end()) {
-                        s.push_back(*C[j]);
-                    }
-                }
-                C_mra.insert(C_mra.end(), s.begin(), s.end());
-            }
-
-            // Paso 4.3: Sea C = {}
-            C.clear();
-
-            // Paso 4.4: Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
-            for (int i = 0; i < C_mra.size(); i++) {
-                vector<Entry> temp;
-                temp.push_back(C_mra[i]);
-                C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(temp)));
-            }
-        }
-
-        // Paso 5: Sea (g, r, a) = OutputInterno(C)
-        vector<Entry> temp;
+    // Paso 4: Mientras |C| > B
+    while (C.size() > B) {
+        // Paso 4.1: Sea C_in = {g|(g, r, a) ∈ C}. Sea C_out = Cluster(C_in). Sea C_mra = {}.
+        vector<Point> C_in_paso_4;
         for (const auto& entry : C) {
-            temp.push_back(*entry);
+            C_in_paso_4.push_back(entry->p);
         }
-        Entry entry_paso_5 = AlgoritmoOutputInterno(temp);
-        final_result.push_back(entry_paso_5);
+        vector<Cluster> C_out = AlgoritmoCluster(C_in_paso_4);
+        vector<Entry> C_mra;
+
+        // Paso 4.2: Por cada c ∈ C_out: Sea s = {(g, r, a) | (g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
+        for (const auto& c : C_out) {
+        vector<Entry> s;
+            for (const auto& entry : C) {
+                if (std::find(c.points.begin(), c.points.end(), entry->p) != c.points.end()) {
+                    s.push_back(*entry);
+                }
+            }
+            C_mra.insert(C_mra.end(), s.begin(), s.end());
+        }
+
+        // Paso 4.3: Sea C = {}
+        C.clear();
+
+        // Paso 4.4: Por cada c ∈ C_out: Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
+        for (const auto& entry : C_mra) {
+            C.push_back(make_shared<Entry>(AlgoritmoOutputInterno({entry})));
+        }
+        // C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(C_mra)));
+    }
+
+    // Paso 5: Sea (g, r, a) = OutputInterno(C)
+    vector<Entry> temp;
+    for (const auto& entry : C) {
+        temp.push_back(*entry);
     }
     // Paso 6: Se retorna a
-    return final_result;
+    return AlgoritmoOutputInterno(temp).a;
 }
 
 // Recordar que
@@ -549,12 +547,14 @@ int main() {
     // Recordar que hay que usar
     // const int B = 4096 / sizeof(Entry);
     // const int b = ceil(B / 2);
-    vector<Entry> resultado = AlgoritmoSS(C_in);
+    shared_ptr<MTree> tree = AlgoritmoSS(C_in);
 
     // Imprimir la estructura del árbol
     cout << "Estructura del arbol MTree:\n";
-    for (const auto& entry : resultado) {
-        cout << "Punto: (" << entry.p.x << ", " << entry.p.y << "), Radio: " << entry.cr << "\n";
+    if (tree) {
+        tree->printTree();  // Si el árbol no es nullptr, imprime su estructura
+    } else {
+        cout << "El árbol M está vacío.\n";
     }
 
     return 0;
