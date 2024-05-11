@@ -477,7 +477,7 @@ shared_ptr<MTree> AlgoritmoSS(const std::vector<Point>& C_in) {
             C_in_paso_4.push_back(entry->p);
         }
         vector<Cluster> C_out = AlgoritmoCluster(C_in_paso_4);
-        vector<Entry> C_mra;
+        vector<vector<Entry>> C_mra;
 
         // Paso 4.2: Por cada c ∈ C_out: Sea s = {(g, r, a) | (g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
         for (const auto& c : C_out) {
@@ -487,15 +487,15 @@ shared_ptr<MTree> AlgoritmoSS(const std::vector<Point>& C_in) {
                     s.push_back(*entry);
                 }
             }
-            C_mra.insert(C_mra.end(), s.begin(), s.end());
+            C_mra.push_back(s);
         }
 
         // Paso 4.3: Sea C = {}
         C.clear();
 
-        // Paso 4.4: Por cada c ∈ C_out: Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
-        for (const auto& entry : C_mra) {
-            C.push_back(make_shared<Entry>(AlgoritmoOutputInterno({entry})));
+        // Paso 4.4: Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
+        for (const auto& s : C_mra) {
+            C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(s)));
         }
         // C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(C_mra)));
     }
