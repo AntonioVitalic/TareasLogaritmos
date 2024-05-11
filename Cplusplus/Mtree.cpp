@@ -5,13 +5,13 @@
 #include <memory>
 #include <climits>
 
-
 using namespace std;
 
 class Point;
 class MTree;
 class Entry;
 class Query;
+class Cluster;
 
 class Point {
 public:
@@ -31,7 +31,18 @@ public:
     }
 
     double distanceTo(const Point& other) const {
-        return std::sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+        return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+    }
+
+    int closerPoint(vector<Point> points) {
+        int index = 0;
+        double min = 1;
+        for (int i = 0; i < points.size(); i++) {
+            if (*this * points[i] < min) {
+                index = i;
+            }
+        }
+        return index;
     }
 };
 
@@ -50,6 +61,8 @@ public:
     shared_ptr<MTree> a; // Dirección del subárbol, usando smart pointers para manejo automático de memoria
 
     Entry(const Point& point, double radius) : p(point), cr(radius), a(nullptr) {}
+    
+    Entry(const Point& point, double radius, shared_ptr<MTree> tree) : p(point), cr(radius), a(tree) {}
 };
 
 class MTree {
@@ -58,8 +71,16 @@ public:
 
     MTree() = default;
 
+    void setEntries(const vector<shared_ptr<Entry>>& e) {
+        entries = e;
+    }
+
     void insert(const Point& point, double radius) {
         entries.push_back(make_shared<Entry>(point, radius)); // push_back para agregar una entrada al final del vector
+    }
+
+    void insert(const Point& point, double radius, shared_ptr<MTree> tree) {
+        entries.push_back(make_shared<Entry>(point, radius, tree));
     }
 
     size_t size() const {
@@ -121,6 +142,7 @@ public:
         }
     }
 
+    // Método deprecado, la búsqueda se realiza en search.cpp
     vector<Point> search(const Query& q) {
         vector<Point> result;
         for (const auto& entry : entries) {
@@ -138,6 +160,61 @@ public:
         return result;
     }
 };
+
+class Cluster {
+public:
+    Point medoid;
+    vector<Point> points;
+
+    Cluster() = default;
+
+    Cluster(const vector<Point>& ps) : points(ps) {
+        calculateMedoid();
+    }
+
+    Cluster(const Point& c) : medoid(c) {}
+
+    void insert(const Point& p) {
+        points.push_back(p);
+    }
+
+    int size() const {
+        return points.size();
+    }
+
+    Point getMedoid() const {
+        return medoid;
+    }
+
+    double rcm() {
+        double maxRad = 0;
+        for (const auto& p : points) {
+            double dist = p * medoid;
+            if (dist > maxRad) {
+                maxRad = dist;
+            }
+        }
+        return maxRad;
+    }
+
+    Point calculateMedoid() {
+        Point newMedoid;
+        double minDist = INT_MAX;
+        for (const auto& p : points) {
+            double sum = 0.0;
+            for (const auto& q : points) {
+                sum += p * q; // usamos d cuadrado por eficiencia
+            }
+            if (sum < minDist) {
+                minDist = sum;
+                newMedoid = p;
+            }
+        }
+        medoid = newMedoid;
+        return medoid;
+    }
+};
+
 
 // int main() {
 //     MTree tree;

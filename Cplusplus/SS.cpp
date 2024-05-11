@@ -110,7 +110,7 @@
 #include <ctime>   // Para std::time (para la semilla del generador aleatorio)
 #include "MTree.cpp"
 
-const int B = 512 / sizeof(Entry);
+const int B = (int) ((double) 512 / sizeof(Entry));
 const int b = (int) ceil((double) B / 2);
 using namespace std;
 

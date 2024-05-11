@@ -47,8 +47,8 @@
 
 using namespace std;
 
-const int B = 512 / sizeof(Entry);
-const int b = ceil(B / 2);
+const int B = (int) ((double) 512 / sizeof(Entry));
+const int b = (int) ceil((double) B / 2);
 
 vector<int> randomIndices(int k, int n) { //k indices y rango n
     vector<int> indices;
