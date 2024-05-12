@@ -1,561 +1,293 @@
-// == Método Sexton-Swinbank (SS)
-// El algoritmo que se propone utiliza otro tipo de clustering. Primero se arma distintos grupos de clusters, los cuales son utilizados para armar el M-tree resultante. Primero definiremos los siguientes conceptos:
-//
-// a. El medoide de un cluster es un punto g en el cluster tal que no existe otro punto p en el cluster que, al ser nominado como medoide, genere un radio menor al entregado por g
-// Sea X = {x1, x2, . . . , xn} un conjunto de n puntos, el medoide de X es el punto g ∈ X tal que g = argmin ∑n i=1 dist(g, xi) donde dist es la función de distancia.
-//
-// b. Un cluster puede tener muchos medoides, se define alguna estrategia para definir el medoide primario.
-//
-// c. La distancia entre dos clusters es la distancia entre sus medoides primarios.
-//
-// d. Dado un cluster c, su vecino más cercano es otro cluster c′ tal que no hay otro cluster que su distancia a c sea menor a la distancia entre c y c′ (se puede tener múltiples vecinos más cercanos).
-//
-// e. El par más cercano es un par de clusters c1, c2 tal que dist(c1, c2) ≤ dist(ci, cj ) para cualquier otro par ci, cj .
-//
-// Para explicar el algoritmo bulk-loader se definen las siguientes funciones:
-//
-// • AlgoritmoCluster: retorna un conjunto de clusters de tamaño entre b y B.
-//
-// Input: Un set de puntos C_in de tamaño mínimo b
-//
-// Paso 1. Se define C_out = {} y C = {}
-// Paso 2. Por cada punto $p ∈ C_in$ se añade {p} a C.
-// Paso 3. Mientras |C| > 1:
-//
-//  Paso 3.1 Sea $c_1$, $c_2$ los pares más cercanos de clusters en C tal que $|c_1| ≥ |c_2|$.
-//  
-//  Paso 3.2 Si $|c_1 ∪ c_2| ≤ B$, se remueve c1 y c2 de C y se añade c1 ∪ c2 a C.
-//  
-//  Paso 3.2 Si no, se remueve c1 de C y se añade c1 a Cout.
-//  
-// Paso 4. Sea c el último elemento de C
-//
-// Paso 5. Si |Cout| > 0:
-//
-//   Paso 5.1 definimos c′ como el vecino más cercano a c en Cout. Removemos c′ de Cout
-//
-//   Paso 5.2 Si no, se define c′ = {}.
-//
-// Paso 6. Si |c ∪ c′| ≤ B:
-//
-//   Paso 6.1 Añadimos c ∪ c′ a Cout.
-//
-//   Paso 6.2 Si no, dividimos c ∪ c′ en c1 y c2 usando MinMax split policy. Se añaden c1 y c2 a Cout.
-//
-// Paso 7. Se retorna Cout
-//
-// El MinMax split policy corresponde a lo siguiente: Se considera todos los posibles pares de puntos, 
-// y alternadamente se van agregando el punto más cercano a alguno de estos centros (esto garantiza que 
-// la división sea balanceada) y se calcula el radio cobertor máximo entre estos dos grupos resultantes. 
-// Esto se prueba para todo par de puntos y se elige el par que tenga el mínimo radio cobertor máximo.
-//
-// • AlgoritmoOutputHoja: Retorna una tupla (g, r, a) donde g es el medoide primario de C_in, 
-// r es llamado el radio cobertor y a la dirección del hijo respectivo.
-//
-// Input: C_in
-//
-// Paso 1. Sea g el medoide primario de C_in. Sea r = 0. Sea C = {} (el que corresponderá al nodo hoja).
-//
-// Paso 2. Por cada p ∈ C_in: Añadimos (p, null, null) a C. Seteamos r = max(r, dist(g, p))
-//
-// Paso 3. Guardamos el puntero a C como a
-//
-// Paso 4. Retornamos (g, r, a)
-//
-// • AlgoritmoOutputInterno: Retorna (G, R, A) donde G es el medoide primario del conjunto de 
-// puntos C_in = {g | ∃ (g, r, a) ∈ C_mra}, R el radio cobertor, y A la dirección del hijo respectivo.
-//
-// Input: C_mra, un conjunto de tuplas (g, r, a) retornadas por OutputHoja
-//
-// Paso 1. Sea C_in = {g | ∃ (g, r, a) ∈ C_mra}. G el medoide primario de C_in.
-// Sea R = 0. Sea C = {} (el que corresponderá a un nodo interno).
-//
-// Paso 2. Por cada (g, r, a) ∈ C_mra: Añadir (g, r, a) a C. Se setea R = max(R, dist(G, g) + r)
-//
-// Paso 3. Guardamos el puntero a C como A.
-//
-// Paso 4. Retornamos (G, R, A)
-//
-// • AlgoritmoSS: retorna la raíz del M-tree construído.
-//
-// Input: C_in, un conjunto de puntos
-//
-// Paso 1. Si |C_in| ≤ B: Se define (g, r, a) = OutputHoja(C_in) y se retorna a.
-//
-// Paso 2. Sea Cout = Cluster(C_in). Sea C = {}.
-//
-// Paso 3. Por cada c ∈ Cout: Se añade OutputHoja(c) a C
-//
-// Paso 4. Mientras |C| > B:
-//
-//   Paso 4.1 Sea C_in = {g|(g, r, a) ∈ C}. Sea Cout = Cluster(C_in). Sea C_mra = {}.
-//
-//   Paso 4.2 Por cada c ∈ Cout: Sea s = {(g, r, a)|(g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
-//
-//   Paso 4.3 Sea C = {}.
-//
-//   Paso 4.4 Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
-//
-// Paso 5. Sea (g, r, a) = OutputInterno(C)
-//
-// Paso 6. Se retorna a
 #include <iostream>
 #include <vector>
-#include <cmath>
-#include <memory>
-#include <limits>
 #include <algorithm>
-#include <tuple>
-#include <cstdlib> // Para std::rand y std::srand
-#include <ctime>   // Para std::time (para la semilla del generador aleatorio)
+#include <limits.h>
+#include <time.h>
 #include "MTree.cpp"
 
-const int B = (int) ((double) 512 / sizeof(Entry));
-const int b = (int) ceil((double) B / 2);
 using namespace std;
+const int B = (int) ((double) 4096 / sizeof(Entry));
+const int b = (int) ceil((double) B / 2);
 
-class Cluster {
-public:
-    std::vector<Point> points;
+pair<Cluster, Cluster> minMax(Cluster cuc) {
+    Cluster c1, c2;
+    double minMaxRC = sqrt(2);
+    // Se consideran todos los posibles pares de puntos
+    for (int i = 0; i < cuc.size(); i++) {
+        for (int j = i+1; j < cuc.size(); j++) {
+            // Alternadamente se asigna cada punto a c1 o c2
+            Cluster c1tmp = c1, c2tmp = c2;
+            vector<Point> points = cuc.points;
 
-    Point calculateMedoid() const {
-        Point medoid;
-        double minSum = std::numeric_limits<double>::max();
+            c1tmp = Cluster(points[i]);
+            c2tmp = Cluster(points[j]);
+            points.erase(points.begin() + i);
+            points.erase(points.begin() + j);
 
-        for (const auto& p1 : points) {
-            double sum = 0;
-            for (const auto& p2 : points) {
-                sum += std::hypot(p1.x - p2.x, p1.y - p2.y);
-            }
-            if (sum < minSum) {
-                minSum = sum;
-                medoid = p1;
-            }
-        }
-        return medoid;
-    }
-
-    double clusterDistance(const Cluster& other) const {
-        // Basic implementation: minimum distance between any two points in the clusters
-        double minDistance = std::numeric_limits<double>::max();
-        for (const auto& p1 : points) {
-            for (const auto& p2 : other.points) {
-                double distance = p1.distanceTo(p2);
-                if (distance < minDistance) {
-                    minDistance = distance;
+            // Se inserta el resto de los puntos  por  cercanía, alternadamente
+            while (!points.empty()) {
+                int idx1 = c1tmp.getMedoid().closestPoint(points);
+                c1tmp.insert(points[idx1]);
+                points.erase(points.begin() + idx1);
+                if (!points.empty()) {
+                    int idx2 = c2tmp.getMedoid().closestPoint(points);
+                    c2tmp.insert(points[idx2]);
+                    points.erase(points.begin() + idx2);
                 }
             }
-        }
-        return minDistance;
-    }
-};
 
-// El MinMax split policy corresponde a lo siguiente: Se considera todos los posibles pares de puntos, 
-// y alternadamente se van agregando el punto más cercano a alguno de estos centros (esto garantiza que 
-// la división sea balanceada) y se calcula el radio cobertor máximo entre estos dos grupos resultantes. 
-// Esto se prueba para todo par de puntos y se elige el par que tenga el mínimo radio cobertor máximo.
-std::pair<Cluster, Cluster> applyMinMaxSplit(Cluster &cluster1, Cluster &cluster2) {
-    // Encontrar el par de puntos (uno de cada cluster) que maximice la distancia entre ellos
-    Point maxPoint1 = cluster1.points[0];
-    Point maxPoint2 = cluster2.points[0];
-    double maxDistance = 0;
+            // Se calcula el radio de c1 y c2
+            double r1 = c1tmp.rcm();
+            double r2 = c2tmp.rcm();
 
-    for (const auto& p1 : cluster1.points) {
-        for (const auto& p2 : cluster2.points) {
-            double dist = p1.distanceTo(p2);
-            if (dist > maxDistance) {
-                maxDistance = dist;
-                maxPoint1 = p1;
-                maxPoint2 = p2;
+            // Se actualiza el minMaxRC y los clusters c1 y c2
+            if (max(r1, r2) < minMaxRC) {
+                minMaxRC = max(r1, r2);
+                c1 = c1tmp;
+                c2 = c2tmp;
             }
         }
     }
-
-    // Crear dos nuevos clusters usando estos puntos como centros iniciales
-    Cluster newCluster1;
-    Cluster newCluster2;
-    newCluster1.points.push_back(maxPoint1);
-    newCluster2.points.push_back(maxPoint2);
-
-    // Distribuir todos los otros puntos al cluster más cercano
-    for (const auto& p : cluster1.points) {
-        if (p.distanceTo(maxPoint1) < p.distanceTo(maxPoint2)) {
-            newCluster1.points.push_back(p);
-        } else {
-            newCluster2.points.push_back(p);
-        }
-    }
-
-    for (const auto& p : cluster2.points) {
-        if (p.distanceTo(maxPoint1) < p.distanceTo(maxPoint2)) {
-            newCluster1.points.push_back(p);
-        } else {
-            newCluster2.points.push_back(p);
-        }
-    }
-
-    // Recalcular los medoides después de la redistribución
-    newCluster1.calculateMedoid();
-    newCluster2.calculateMedoid();
-
-    // Reemplazar los clusters originales con los nuevos clusters
-    cluster1 = newCluster1;
-    cluster2 = newCluster2;
-
-    return std::make_pair(cluster1, cluster2);
+    return {c1, c2};
 }
 
-// • AlgoritmoCluster: retorna un conjunto de clusters de tamaño entre b y B.
-//
-// Input: Un set de puntos C_in de tamaño mínimo b
-//
-// Paso 1. Se define C_out = {} y C = {}
-// Paso 2. Por cada punto $p ∈ C_in$ se añade {p} a C.
-// Paso 3. Mientras |C| > 1:
-//
-//  Paso 3.1 Sea $c_1$, $c_2$ los pares más cercanos de clusters en C tal que $|c_1| ≥ |c_2|$.
-//  
-//  Paso 3.2 Si $|c_1 ∪ c_2| ≤ B$, se remueve c1 y c2 de C y se añade c1 ∪ c2 a C.
-//  
-//  Paso 3.2 Si no, se remueve c1 de C y se añade c1 a Cout.
-//  
-// Paso 4. Sea c el último elemento de C
-//
-// Paso 5. Si |Cout| > 0:
-//
-//   Paso 5.1 definimos c′ como el vecino más cercano a c en Cout. Removemos c′ de Cout
-//
-//   Paso 5.2 Si no, se define c′ = {}.
-//
-// Paso 6. Si |c ∪ c′| ≤ B:
-//
-//   Paso 6.1 Añadimos c ∪ c′ a Cout.
-//
-//   Paso 6.2 Si no, dividimos c ∪ c′ en c1 y c2 usando MinMax split policy. Se añaden c1 y c2 a Cout.
-//
-// Paso 7. Se retorna Cout
-//
-// El MinMax split policy corresponde a lo siguiente: Se considera todos los posibles pares de puntos, 
-// y alternadamente se van agregando el punto más cercano a alguno de estos centros (esto garantiza que 
-// la división sea balanceada) y se calcula el radio cobertor máximo entre estos dos grupos resultantes. 
-// Esto se prueba para todo par de puntos y se elige el par que tenga el mínimo radio cobertor máximo.
-std::vector<Cluster> AlgoritmoCluster(std::vector<Point> C_in) {
-    // Paso 1: Se define C_out = {} y C = {}
-    std::vector<Cluster> C_out, C;
+// Funcion cluster
+vector<Cluster> cluster(vector<Point>& Cin){
+    // Paso 1: Se define Cout = {} y C = {}
+    vector<Cluster> Cout, C;
 
-    // Paso 2: Por cada punto p ∈ C_in se añade {p} a C
-    for (int i = 0; i < C_in.size(); i++){
-        Cluster C_temp;
-        // agregar C_in[i] a temp
-        C_temp.points.push_back(C_in[i]);
-        C_temp.calculateMedoid();
-        C.push_back(C_temp);
+    // Paso 2: Por cada punto en Cin, crear un cluster con ese punto
+    for (const auto& p : Cin) {
+        Cluster c = Cluster(p);
+        c.insert(p);
+        C.push_back(c);
     }
 
-    // Paso 3: Mientras |C| > 1
+    // Paso 3: Mientras C tenga un solo cluster
     while (C.size() > 1) {
-        // Paso 3.1: Se define c1, c2 los pares más cercanos de clusters en C tal que |c1| ≥ |c2|
-        double minDistance = std::numeric_limits<double>::max();
-        int c1Index = 0, c2Index = 0;
-
+        // Paso 3.1: Par de clusters más cercanos
+        int idx1=0, idx2=0; // |c1| >= |c2|
+        double minDist = 2;        
         for (int i = 0; i < C.size(); i++) {
-            for (int j = i + 1; j < C.size(); j++) {
-                double distance = C[i].clusterDistance(C[j]);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    c1Index = i;
-                    c2Index = j;
+            for (int j = i+1; j < C.size(); j++) {
+                double dist = C[i].getMedoid() * C[j].getMedoid();
+                if (dist < minDist) {
+                    minDist = dist;
+                    if (C[i].size() < C[j].size()) {
+                        idx1 = j;
+                        idx2 = i;
+                    } else {
+                        idx1 = i;
+                        idx2 = j;
+                    }
                 }
             }
         }
 
-        // Paso 3.2: Si |c1 ∪ c2| ≤ B, se remueve c1 y c2 de C y se añade c1 ∪ c2 a C
-        if (C[c1Index].points.size() + C[c2Index].points.size() <= B) {
-            C[c1Index].points.insert(C[c1Index].points.end(), C[c2Index].points.begin(), C[c2Index].points.end());
-            C.erase(C.begin() + c2Index);
+        if (C[idx1].size() + C[idx2].size() <= B) {
+        // Paso 3.2: Si |c1| + |c2| <= B, entonces unir c1 y c2
+            Cluster join = C[idx1];
+            for (const auto& p : C[idx2].points) {
+                join.insert(p);
+            }
+
+            join.calculateMedoid();
+            if (idx1 > idx2) { // Jerarquia de eliminacion (erase deplaza los elementos a la izquierda)
+                C.erase(C.begin() + idx1);
+                C.erase(C.begin() + idx2);
+            } else {
+                C.erase(C.begin() + idx2);
+                C.erase(C.begin() + idx1);
+            }
+            C.push_back(join);
         } else {
-            // Paso 3.3: Si no, se remueve c1 de C y se añade c1 a C_out
-            C_out.push_back(C[c1Index]);
-            C.erase(C.begin() + c1Index);
+        // Paso 3.2: Se remueve c1 de C y se agrega a Cout
+            Cout.push_back(C[idx1]);
+            C.erase(C.begin() + idx1);
         }
     }
+        
 
-    // Paso 4: Sea c el último elemento de C
-    Cluster c = C[0];
+    // Paso 4: c ultimo elemento de C
+    Cluster c = C[C.size()-1];
 
-    // Paso 5: Si |C_out| > 0
-    Cluster cPrime = Cluster();
-    if (C_out.size() > 0) {
-        // Paso 5.1: Se define c′ como el vecino más cercano a c en C_out. Removemos c′ de C_out
-        double minDistance = std::numeric_limits<double>::max();
-        int cPrimeIndex = 0;
-
-        for (int i = 0; i < C_out.size(); i++) {
-            double distance = c.clusterDistance(C_out[i]);
-            if (distance < minDistance) {
-                minDistance = distance;
-                cPrimeIndex = i;
+    Cluster cPrime;
+    if (Cout.size() > 0) {
+    // Paso 5: Si |Cout| > 0:
+        // Paso 5.1: definir c' como el vecino mas cercano de c en Cout
+        double minDist = 2;
+        int idx = 0;
+        for (int i = 0; i < Cout.size(); i++) {
+            double dist = c.getMedoid() * Cout[i].getMedoid();
+            if (dist < minDist) {
+                minDist = dist;
+                idx = i;
             }
         }
+        // Remover c' de Cout
+        cPrime = Cout[idx];
+        Cout.erase(Cout.begin() + idx);
+    } // Paso 5.2: Si no c' esta vacio
 
-        // Remover c' de C_out
-        cPrime = C_out[cPrimeIndex];
-        C_out.erase(C_out.begin() + cPrimeIndex);
+    // Paso 6: Si |c u c'| <= B:
+    for (const auto& p : cPrime.points) { // Union
+        c.insert(p);
+    }
+    c.calculateMedoid();
+    if (c.size() <= B) {
+        // Paso 6.1: Añadir c u c' a Cout
+        Cout.push_back(c);
     } else {
-        // Paso 5.2: Si no, se define c′ = {}
-        cPrime = Cluster();
+        // Paso 6.2: Aplicar MinMax
+        pair<Cluster, Cluster> c1c2 = minMax(c);
+        Cout.push_back(c1c2.first);
+        Cout.push_back(c1c2.second);
     }
 
-    // Paso 6: Si |c ∪ c′| ≤ B
-    if (c.points.size() + cPrime.points.size() <= B) {
-        // Paso 6.1: Añadimos c ∪ c′ a C_out
-        c.points.insert(c.points.end(), cPrime.points.begin(), cPrime.points.end());
-        c.calculateMedoid(); // Recalcular el medoide después de la unión
-        C_out.push_back(c); // Añadir c ∪ c' a C_out
-    } else {
-        // Paso 6.2: Si no, dividimos c ∪ c′ en c1 y c2 usando MinMax split policy. Se añaden c1 y c2 a C_out
-        std::pair<Cluster, Cluster> split = applyMinMaxSplit(c, cPrime);
-        C_out.push_back(split.first);
-        C_out.push_back(split.second);
-    }
-
-    // Paso 7: Se retorna C_out
-    return C_out;
-    
+    // Paso 7: Retornar Cout
+    return Cout;
 }
 
-
-
-// • AlgoritmoOutputHoja: Retorna una tupla (g, r, a) donde g es el medoide primario de C_in,
-// r es llamado el radio cobertor y a la dirección del hijo respectivo.
-//
-// Input: C_in
-//
-// Paso 1. Sea g el medoide primario de C_in. Sea r = 0. Sea C = {} (el que corresponderá al nodo hoja).
-//
-// Paso 2. Por cada p ∈ C_in: Añadimos (p, null, null) a C. Seteamos r = max(r, dist(g, p))
-//
-// Paso 3. Guardamos el puntero a C como a
-//
-// Paso 4. Retornamos (g, r, a)
-// Recordar que 
-// class Entry {
-// public:
-//     Point p;            // Punto de esta entrada
-//     double cr;          // Radio de cobertura de todos los puntos del subárbol asociado
-//     shared_ptr<MTree> a; // Dirección del subárbol, usando smart pointers para manejo automático de memoria
-
-//     Entry(const Point& point, double radius) : p(point), cr(radius), a(nullptr) {}
-// };
-Entry AlgoritmoOutputHoja(const std::vector<Point>& points) {
-    // Paso 1: Sea g el medoide primario de C_in. Sea r = 0. Sea C = {} (el que corresponderá al nodo hoja).
-    // Calcular el medoide g (de tipo Point) de C_in
-    Cluster C_in;
-    C_in.points = points;
-    Point g = C_in.calculateMedoid();
-    double maxRadius = 0;
-    vector<Entry> C; // C = {} (el que corresponderá al nodo hoja).
-
-    // Paso 2: Por cada p ∈ C_in: Añadimos (p, null, null) a C. Seteamos r = max(r, dist(g, p))
-    for (const auto& point : C_in.points) {
-       Entry entry_temp = Entry(point, 0.0);
-       C.push_back(entry_temp);
-       double dist = g.distanceTo(point);
-       if (dist > maxRadius) {
-            maxRadius = dist;
-       }
-
-    }
-    double r = maxRadius; // Paso 2: Seteamos r = max(r, dist(g, p))
-    // Crear una instancia de MTree y agregar las entradas
-    auto tree = make_shared<MTree>();
-    for (auto& entry : C) {
-        tree->insert(entry.p, entry.cr);
-    }
-
-    // Paso 3 y 4: Configurar y retornar Entry con el árbol
-    Entry ret(g, r);
-    ret.a = tree;
-    return ret;
-}
-
-// • AlgoritmoOutputInterno: Retorna (G, R, A) donde G es el medoide primario del conjunto de 
-// puntos C_in = {g | ∃ (g, r, a) ∈ C_mra}, R el radio cobertor, y A la dirección del hijo respectivo.
-//
-// Input: C_mra, un conjunto de tuplas (g, r, a) retornadas por OutputHoja
-//
-// Paso 1. Sea C_in = {g | ∃ (g, r, a) ∈ C_mra}. G el medoide primario de C_in.
-// Sea R = 0. Sea C = {} (el que corresponderá a un nodo interno).
-//
-// Paso 2. Por cada (g, r, a) ∈ C_mra: Añadir (g, r, a) a C. Se setea R = max(R, dist(G, g) + r)
-//
-// Paso 3. Guardamos el puntero a C como A.
-//
-// Paso 4. Retornamos (G, R, A)
-// Recordar que 
-// class Entry {
-// public:
-//     Point p;            // Punto de esta entrada
-//     double cr;          // Radio de cobertura de todos los puntos del subárbol asociado
-//     shared_ptr<MTree> a; // Dirección del subárbol, usando smart pointers para manejo automático de memoria
-
-//     Entry(const Point& point, double radius) : p(point), cr(radius), a(nullptr) {}
-// };
-
-Entry AlgoritmoOutputInterno(const std::vector<Entry>& C_mra) {
-    // Paso 1: Sea C_in = {g | ∃ (g, r, a) ∈ C_mra}. G el medoide primario de C_in.
-    Cluster C_in;
-    for (const auto& entry : C_mra) {
-        C_in.points.push_back(entry.p);
-    }
-    Point G = C_in.calculateMedoid();
-    double maxRadius = 0;
-    auto C = make_shared<MTree>(); // C = {}, el que corresponderá a un nodo interno.
-
-    // Paso 2: Por cada (g, r, a) ∈ C_mra: Añadir (g, r, a) a C. Se setea R = max(R, dist(G, g) + r)
-    for (const auto& entry : C_mra) {
-        C->insert(entry.p, entry.cr);
-        double dist = G.distanceTo(entry.p) + entry.cr; // entry.p es el punto g
-        if (dist > maxRadius) {
-            maxRadius = dist;
-        }
-    }
-    double R = maxRadius; // Paso 2: Seteamos R = max(R, dist(G, g) + r)
-    // Paso 3: Guardamos el puntero a C como A.
-
-    Entry ret = Entry(G, R);
-    ret.a = C; // ret.a = A
-    
-    // Paso 4: Retornamos la tupla (G, R, A)
-    return ret;
-}
-
-// • AlgoritmoSS: retorna la raíz del M-tree construído.
-//
-// Input: C_in, un conjunto de puntos
-//
-// Paso 1. Si |C_in| ≤ B: Se define (g, r, a) = OutputHoja(C_in) y se retorna a.
-//
-// Paso 2. Sea Cout = Cluster(C_in). Sea C = {}.
-//
-// Paso 3. Por cada c ∈ Cout: Se añade OutputHoja(c) a C
-//
-// Paso 4. Mientras |C| > B:
-//
-//   Paso 4.1 Sea C_in = {g|(g, r, a) ∈ C}. Sea Cout = Cluster(C_in). Sea C_mra = {}.
-//
-//   Paso 4.2 Por cada c ∈ Cout: Sea s = {(g, r, a)|(g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
-//
-//   Paso 4.3 Sea C = {}.
-//
-//   Paso 4.4 Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
-//
-// Paso 5. Sea (g, r, a) = OutputInterno(C)
-//
-// Paso 6. Se retorna a
-shared_ptr<MTree> AlgoritmoSS(const std::vector<Point>& C_in) {
-    // Paso 1: Verificar si el tamaño de C_in es menor o igual a B.
-    if (C_in.size() <= B) {
-        // Se define (g, r, a) = OutputHoja(C_in) y se retorna a.
-        return AlgoritmoOutputHoja(C_in).a;
-    } 
-
-    // Paso 2: Sea C_out = Cluster(C_in). Sea C = {}.
-    vector<Cluster> C_out = AlgoritmoCluster(C_in);
+shared_ptr<Entry> outputHoja(vector<Point>& Cin) {
+    // Paso 1: Sea g el medoide de Cin. Sea r=0. Sea C = {} (nodo hoja)
+    double r = 0;
+    Cluster c = Cluster(Cin);
+    Point g = c.calculateMedoid();
     vector<shared_ptr<Entry>> C;
 
-    // Paso 3: Por cada c ∈ C_out: Se añade OutputHoja(c) a C
-    for (const auto& c : C_out) {
-        C.push_back(make_shared<Entry>(AlgoritmoOutputHoja(c.points)));
+    // Paso 2: por cada p en Cin, añadir (p, null, null) a C y setear r = max(r, d(p, g))
+    for (const auto& p : Cin) {
+        Entry e = Entry(p, 0);
+        shared_ptr<Entry> entry = make_shared<Entry>(e);
+        C.push_back(entry);
+        double dist = p * g;
+        r = max(r, dist);
+    }
+
+    // Paso 3: Guardar el puntero C como a
+    shared_ptr<MTree> a = make_shared<MTree>();
+    a->setEntries(C);
+    
+    Entry ret = Entry(g, r, a);
+    shared_ptr<Entry> retPtr = make_shared<Entry>(ret);
+    return retPtr;
+}
+
+shared_ptr<Entry> outputInterno(vector<shared_ptr<Entry>>& Cmra) {
+    // Paso 1: Sea Cin = {g1, g2, ..., gk} (g_i es el p de cada Entry en Cmra), G el medioide de Cin, R=0, C={} (output interno)
+    Cluster Cin;
+    for (const auto& entry : Cmra) {
+        Cin.insert(entry->p);
+    }
+    Point G = Cin.calculateMedoid();
+    double R = 0;
+
+    // Paso 2: Por cada Entry en Cmra añadir (g, r, a) a C. Se setea R = max(R, dist(G, g) + r)
+    shared_ptr<MTree> A = make_shared<MTree>();
+    double quadDist = 0;
+    double cr = 0;
+    for (const auto& entry : Cmra) {
+        A->insert(entry->p, entry->cr, entry->a);
+        if (R < entry->cr + G * entry->p) {
+            quadDist = G * entry->p;
+            cr = entry->cr;
+            R = entry->cr + G * entry->p;
+        }
+    }
+    R = sqrt(quadDist) + cr; // Optimizacion de sqrt
+
+    // Paso 3, 4: Guardar el puntero C como A (check) y retornar (G, R, A)
+    Entry ret = Entry(G, R, A);
+    shared_ptr<Entry> retPtr = make_shared<Entry>(ret);
+    return retPtr;
+}
+
+shared_ptr<MTree> AlgoritmoSS(vector<Point>& Cin) {
+    // Paso 1: Si |Cin| <= B, se define (g, r, a) = outputHoja(Cin) y se retorna a
+    if (Cin.size() <= B) {
+        shared_ptr<Entry> entry = outputHoja(Cin);
+        return entry->a;
+    }
+
+    // Paso 2: Sea Cout = cluster(Cin). Sea C = {}
+    vector<Cluster> Cout = cluster(Cin);
+    vector<shared_ptr<Entry>> C;
+
+    // Paso 3: Por cada c en Cout, añadir outputHoja(c) a C
+    for (const auto& c : Cout) {
+        vector<Point> points = c.points;
+        shared_ptr<Entry> entry = outputHoja(points);
+        C.push_back(entry);
     }
 
     // Paso 4: Mientras |C| > B
     while (C.size() > B) {
-        // Paso 4.1: Sea C_in = {g|(g, r, a) ∈ C}. Sea C_out = Cluster(C_in). Sea C_mra = {}.
-        vector<Point> C_in_paso_4;
+        // Paso 4.1: Sea Cin = {g1, g2, ..., gk} (g_i es el p de cada Entry en C). Sea Cout = cluster(Cin). Sea Cmra = {}
+        vector<Point> Cin;
         for (const auto& entry : C) {
-            C_in_paso_4.push_back(entry->p);
+            Cin.push_back(entry->p);
         }
-        vector<Cluster> C_out = AlgoritmoCluster(C_in_paso_4);
-        vector<vector<Entry>> C_mra;
+        
+        vector<Cluster> Cout = cluster(Cin);
+        vector<vector<shared_ptr<Entry>>> Cmra;
 
-        // Paso 4.2: Por cada c ∈ C_out: Sea s = {(g, r, a) | (g, r, a) ∈ C ∧ g ∈ c}, se añade s a C_mra
-        for (const auto& c : C_out) {
-        vector<Entry> s;
+        // Paso 4.2: por cada c en Cout, sea s = {(g,r,a)_1, (g,r,a)_2, ..., (g,r,a)_m}, se añade s a Cmra
+        for (const auto& c : Cout) {
+            vector<shared_ptr<Entry>> s;
             for (const auto& entry : C) {
-                if (std::find(c.points.begin(), c.points.end(), entry->p) != c.points.end()) {
-                    s.push_back(*entry);
+                if (find(c.points.begin(), c.points.end(), entry->p) != c.points.end()) {
+                    s.push_back(entry);
                 }
             }
-            C_mra.push_back(s);
+            Cmra.push_back(s);
         }
 
         // Paso 4.3: Sea C = {}
         C.clear();
 
-        // Paso 4.4: Por cada s ∈ C_mra: Añadir OutputInterno(s) a C
-        for (const auto& s : C_mra) {
-            C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(s)));
+        // Paso 4.4: Por cada s en Cmra, añadir outputInterno(s) a C
+        for (const auto& s : Cmra) {
+            vector<shared_ptr<Entry>> vs = s;
+            shared_ptr<Entry> entry = outputInterno(vs);
+            C.push_back(entry);
         }
-        // C.push_back(make_shared<Entry>(AlgoritmoOutputInterno(C_mra)));
     }
 
-    // Paso 5: Sea (g, r, a) = OutputInterno(C)
-    vector<Entry> temp;
-    for (const auto& entry : C) {
-        temp.push_back(*entry);
-    }
-    // Paso 6: Se retorna a
-    return AlgoritmoOutputInterno(temp).a;
+    // Paso 5: Sea (g, r, a) = outputInterno(C)
+    shared_ptr<Entry> ret = outputInterno(C);
+
+    return ret->a;
 }
 
-// Recordar que
-// class MTree {
-// public:
-//     vector<shared_ptr<Entry>> entries; // Uso de vector para manejar dinámicamente las entradas
 
-//     MTree() = default;
+// int main() {
 
-//     void printTree(int depth = 0) const {
-//         for (const auto& entry : entries) {
-//             cout << string(depth * 2, ' ') << "Punto: (" << entry->p.x << ", " << entry->p.y
-//                  << "), Radio: " << entry->cr << "\n";
-//             if (entry->a) {
-//                 entry->a->printTree(depth + 1);
-//             }
-//         }
+//     srand(static_cast<unsigned int>(time(nullptr)));
+
+//     // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
+//     int n = pow(2, 8);
+//     vector<Point> points(n);
+//     for (int i = 0; i < n; i++) {
+//         points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
+//                      static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
 //     }
+//     // quitar elementos de un conjunto de puntos
+//     // points.erase(points.begin() + 1);
+//     // cout<<points.size()<<endl;
+
+//     shared_ptr<MTree> result = AlgoritmoSS(points);
+
+//     cout<<endl;
+//     // result->printTree();
+
+//     pair<int, vector<Point>> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
+
+//     cout<<"Search result: "<<endl;
+//     cout<<"Access count: " << searchResult.first << endl;
+//     for (const auto& point : searchResult.second) {
+//         cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
+//     }
+
+//     cout<<"Tree root size: "<<result->size()<<endl;
+//     return 0;
 // }
-
-int main() {
-    srand(static_cast<unsigned int>(time(nullptr)));
-
-    const short base = 2;
-    const short exponent = 10;
-
-    int n = pow(base, exponent);  // Número de puntos, ajustable según necesidad
-    vector<Point> C_in;
-    for (int i = 0; i < n; i++) {
-        double x = static_cast<double>(rand()) / RAND_MAX;
-        double y = static_cast<double>(rand()) / RAND_MAX;
-        C_in.emplace_back(x, y);
-    }
-
-    // Imprimir la cantidad de puntos generados
-    std::cout << "Cantidad de puntos generados: 2^" << log2(C_in.size()) << std::endl;
-
-    // Recordar que hay que usar
-    // const int B = 4096 / sizeof(Entry);
-    // const int b = ceil(B / 2);
-    shared_ptr<MTree> tree = AlgoritmoSS(C_in);
-
-    // Imprimir la estructura del árbol
-    cout << "Estructura del arbol MTree:\n";
-    if (tree) {
-        tree->printTree();  // Si el árbol no es nullptr, imprime su estructura
-    } else {
-        cout << "El árbol M está vacío.\n";
-    }
-
-    return 0;
-}

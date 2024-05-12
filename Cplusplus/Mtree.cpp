@@ -34,11 +34,11 @@ public:
         return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
     }
 
-    int closerPoint(vector<Point> points) {
+    int closestPoint(vector<Point> points) {
         int index = 0;
-        double min = 1;
+        double m = 2;
         for (int i = 0; i < points.size(); i++) {
-            if (*this * points[i] < min) {
+            if (*this * points[i] < m) {
                 index = i;
             }
         }
@@ -142,22 +142,24 @@ public:
         }
     }
 
-    // Método deprecado, la búsqueda se realiza en search.cpp
-    vector<Point> search(const Query& q) {
+    // Funcion de busqueda en el arbol mediante un query
+    pair<int, vector<Point>> search(const Query& q) {
+        int accessCount = 1; // Initialize access count to 1
         vector<Point> result;
         for (const auto& entry : entries) {
-            if (entry->a) { // Nodo interno
+            if (entry->a) { // Internal node
                 if (entry->p.distanceTo(q.p) <= entry->cr + q.r) {
-                    vector<Point> subResult = entry->a->search(q);
-                    result.insert(result.end(), subResult.begin(), subResult.end());
+                    pair<int, vector<Point>> subResult = entry->a->search(q);
+                    accessCount += subResult.first; // Add access count from sub-tree
+                    result.insert(result.end(), subResult.second.begin(), subResult.second.end());
                 }
-            } else { // Nodo externo
+            } else { // External node
                 if (entry->p.distanceTo(q.p) <= q.r) {
                     result.push_back(entry->p);
                 }
             }
         }
-        return result;
+        return make_pair(accessCount, result);
     }
 };
 
@@ -214,20 +216,3 @@ public:
         return medoid;
     }
 };
-
-
-// int main() {
-//     MTree tree;
-//     tree.insert(Point(0.1, 0.2), 0.05);
-//     tree.insert(Point(0.3, 0.4), 0.06);
-
-//     cout << "Tree has " << tree.size() << " entries." << endl;
-
-//     for (auto& entry : tree.entries) {
-//         cout << "Point (" << entry->p.x << ", " << entry->p.y << ") with radius " << entry->cr << endl;
-//     }
-
-//     cout << sizeof(Entry) << endl;
-
-//     return 0;
-// }
