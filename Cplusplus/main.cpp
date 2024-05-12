@@ -127,8 +127,8 @@ int main() {
     srand(time(NULL));
 
     // Potencias de 2 de inicio a fin (solo exponentes)
-    int inicio = 13;
-    int fin = 15;
+    int inicio = 8;
+    int fin = 8;
 
 
     // Para cada potencia de 2
@@ -141,7 +141,7 @@ int main() {
         fileSS << "MethodDuration,SearchTime,MeanTime,ConfidenceInterval_i,ConfidenceInterval_f" << endl;
         
         // 100 iteraciones por cada potencia de 2
-        int iteraciones = 1;
+        int iteraciones = 100;
         for (int j = 0; j < iteraciones; j++) {
             vector<Point> points = generatePoint(n);
             vector<Query> querys = generateQuerys();

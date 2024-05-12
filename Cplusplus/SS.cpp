@@ -260,34 +260,31 @@ shared_ptr<MTree> AlgoritmoSS(vector<Point>& Cin) {
 }
 
 
-// int main() {
+int main() {
 
-//     srand(static_cast<unsigned int>(time(nullptr)));
+    srand(static_cast<unsigned int>(time(nullptr)));
 
-//     // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
-//     int n = pow(2, 8);
-//     vector<Point> points(n);
-//     for (int i = 0; i < n; i++) {
-//         points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
-//                      static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
-//     }
-//     // quitar elementos de un conjunto de puntos
-//     // points.erase(points.begin() + 1);
-//     // cout<<points.size()<<endl;
+    // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
+    int n = pow(2, 12);
+    vector<Point> points(n);
+    for (int i = 0; i < n; i++) {
+        points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
+                     static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
+    }
 
-//     shared_ptr<MTree> result = AlgoritmoSS(points);
+    shared_ptr<MTree> result = AlgoritmoSS(points);
 
-//     cout<<endl;
-//     // result->printTree();
+    cout<<endl;
+    // result->printTree();
 
-//     pair<int, vector<Point>> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
+    pair<int, vector<Point>> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
 
-//     cout<<"Search result: "<<endl;
-//     cout<<"Access count: " << searchResult.first << endl;
-//     for (const auto& point : searchResult.second) {
-//         cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
-//     }
+    cout<<"Search result: "<<endl;
+    cout<<"Access count: " << searchResult.first << endl;
+    for (const auto& point : searchResult.second) {
+        cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
+    }
 
-//     cout<<"Tree root size: "<<result->size()<<endl;
-//     return 0;
-// }
+    cout<<"Tree root size: "<<result->size()<<endl;
+    return 0;
+}

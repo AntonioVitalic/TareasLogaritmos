@@ -106,7 +106,7 @@ public:
             if (entry->a) {
                 if (entry->a->getHeight() == h) {
                     result.push_back({entry->p, entry->a});
-                } else {
+                } else if (entry->a->getHeight() > h) {
                     vector<pair<Point, shared_ptr<MTree>>> subResult = entry->a->searchByHeights(h);
                     result.insert(result.end(), subResult.begin(), subResult.end());
                 }

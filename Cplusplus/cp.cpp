@@ -1,44 +1,3 @@
-// == Método Ciaccia-Patella (AlgoritmoCP)
-// El algoritmo que se propone en este método realiza un clustering de n puntos P = {$p_1$, ..., $p_n$}, obteniendo un M-tree balanceado T que cumple con tener cada nodo dentro de las
-// capacidades permitidas. Se realizan los siguientes pasos:
-//
-// Algoritmo AlgoritmoCP:
-//
-// Input: Un set de puntos P
-// 1. Si |P| ≤ B, se crea un árbol T , se insertan todos los puntos a T y se retorna T.
-//
-// 2. De manera aleatoria se eligen k = min(B, n/B) puntos de P, que los llamaremos samples $p_f_1$, . . . , $p_f_k$. Se insertan en un conjunto F de samples.
-//
-// 3. Se le asigna a cada punto en P su sample más cercano. Con eso se puede construir k conjuntos $F_1$, . . . , $F_k$.
-//
-// 4. Etapa de redistribución: Si algún $F_j$ es tal que $|F_j| < b$:
-//
-// 4.1 Quitamos $p_f_j$ de F
-//
-// 4.2 Por cada $p ∈ F_j$, le buscamos el sample $p_f_l$ más cercano de F y lo añadimos a su conjunto $F_l$.
-//
-// 5. Si $|F| = 1$, volver al paso 2.
-//
-// 6. Se realiza recursivamente el algoritmo AlgoritmoCP en cada $F_j$, obteniendo el árbol $T_j$
-//
-// 7. Si la raíz del árbol es de un tamaño menor a b, se quita esa raíz, se elimina $p_f_j$ de F y se trabaja con sus subárboles como nuevos $T_j$ , . . . , $T_{j+p−1}$, se añaden los puntos pertinentes a F.
-//
-// 8. Etapa de balanceamiento: Se define h como la altura mínima de los árboles $T_j$. Se define T, inicialmente como un conjunto vacío.
-//
-// 9. Por cada $T_j$ , si su altura es igual a h, se añade a  $T′$. Si no se cumple:
-// 9.1 Se borra el punto pertinente en $F$.
-//
-// 9.2 Se hace una búsqueda exhaustiva en $T_j$ de todos los subárboles $T′_1$, . . . , $T′_p$ de altura igual a h. Se insertan estos árboles a $T′$
-//
-// 9.3 Se insertan los puntos raíz de $T′_1$, . . . , $T′p$, $p′_f_1$, . . . , $p′_f_p$ en F
-//
-// 10. Se define $T_sup$ como el resultado de la llamada al algoritmo AlgoritmoCP aplicado a F.
-//
-// 11. Se une cada $T_j$ ∈ $T′$ a su hoja en $T_sup$ correspondiente al punto $p_f_j$ ∈ F, obteniendo un nuevo árbol T.
-//
-// 12. Se setean los radios cobertores resultantes para cada entrada en este árbol.
-//
-// 13. Se retorna T .
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -187,7 +146,7 @@ shared_ptr<MTree> AlgoritmoCP(vector<Point>& points) {
     shared_ptr<MTree> T_sup = AlgoritmoCP(F);
 
     // Paso 11: Unir cada Tj en T' a su hoja en T_sup correspondiente al punto pfj en F
-    for (int i = 0; i < F.size(); i++) {
+    for (int i = 0; i < treesPrime.size(); i++) {
         shared_ptr<MTree> tree = treesPrime[i];
         Point p = F[i];
         T_sup->entries[i]->a = tree;
@@ -203,42 +162,39 @@ shared_ptr<MTree> AlgoritmoCP(vector<Point>& points) {
     return T_sup;
 }
 
-// int main() {
-//     // vector<Point> points = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}};
-//     // auto result = AlgoritmoCP(points);
-//     // if (result) {
-//     //     cout << "Tree has " << result->size() << " entries." << endl;
-//     // }
+int main() {
+    // vector<Point> points = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}};
+    // auto result = AlgoritmoCP(points);
+    // if (result) {
+    //     cout << "Tree has " << result->size() << " entries." << endl;
+    // }
 
-//     // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
-//     srand(time(NULL));
+    // Crear un conjunto de puntos aleatorios en el rango [0,1] x [0,1]
+    srand(time(NULL));
 
     
-//     int n = pow(2, 13);
-//     vector<Point> points(n);
-//     for (int i = 0; i < n; i++) {
-//         points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
-//                      static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
-//     }
-//     // quitar elementos de un conjunto de puntos
-//     // points.erase(points.begin() + 1);
-//     // cout<<points.size()<<endl;
+    int n = pow(2, 15);
+    vector<Point> points(n);
+    for (int i = 0; i < n; i++) {
+        points[i] = {static_cast <double> (rand()) / static_cast <double> (RAND_MAX),
+                     static_cast <double> (rand()) / static_cast <double> (RAND_MAX)};
+    }
 
-//     shared_ptr<MTree> result = AlgoritmoCP(points);
+    shared_ptr<MTree> result = AlgoritmoCP(points);
 
-//     cout<<endl;
-//     // result->printTree();
+    cout<<endl;
+    // result->printTree();
 
-//     pair<int, vector<Point>> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
+    pair<int, vector<Point>> searchResult = result->search(Query(Point(0.5, 0.4), 0.1));
 
-//     cout<<"Search result: "<<endl;
-//     cout<<"Access count: " << searchResult.first << endl;
-//     for (const auto& point : searchResult.second) {
-//         cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
-//     }
+    cout<<"Search result: "<<endl;
+    cout<<"Access count: " << searchResult.first << endl;
+    for (const auto& point : searchResult.second) {
+        cout<<"Point ("<<point.x<<", "<<point.y<<")"<<endl;
+    }
 
-//     cout<<"Tree root size: "<<result->size()<<endl;
-//     cout<<"B: "<<B<<endl;
-//     cout<<"b: "<<b<<endl;
-//     return 0;
-// }
+    cout<<"Tree root size: "<<result->size()<<endl;
+    cout<<"B: "<<B<<endl;
+    cout<<"b: "<<b<<endl;
+    return 0;
+}

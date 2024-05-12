@@ -1,0 +1,4 @@
+# ignorar exes, .out y .csv
+*.exe
+*.out
+*.csv
