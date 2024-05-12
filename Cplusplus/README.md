@@ -17,7 +17,7 @@ A continuación se presenta el proceso de compilación y ejecución.
 
 ### Compilación: 
 
-$ g++ main.cpp -o [main.exe (windows) | main.out (linux)]
+$ g++ main.cpp -o [main.exe (windows) | main.out (linux)] -std=c++17
 ### Ejecución: $ .\main.[exe | out]
 
 ## Estructura del proyecto
