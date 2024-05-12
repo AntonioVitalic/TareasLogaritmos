@@ -2,3 +2,6 @@
 *.exe
 *.out
 *.csv
+
+# ignorar archivos de configuración de vscode
+.vscode/
