@@ -37,8 +37,8 @@ Los programas Mtree.cpp, cp.cpp y ss.cpp, corresponden a las estructuras ocupada
   - 
     Las busquedas se implementan en la clase de MTree y ademas, se sobrecarga el operador * en Point para calcular en lo posible la distancia al cuadrado, con el fin de optimizar los calculos que solo requieren comparar y no guardar la distancia como tal.
   
-- cp.cpp presenta el algoritmo Ciaccia Patella utilizando estructuras.
-- ss.cpp presenta el algoritmo Sexton-Swingbank.
+- cp.cpp presenta el algoritmo Ciaccia Patella utilizando las estructuras del Mtree.cpp.
+- ss.cpp presenta el algoritmo Sexton-Swingbank utilizando las estructuras del Mtree.cpp.
 - En ambos archivos se indica los tamaños de B = 4096 / sizeof(Entry), con un Entries de 32bytes, consiguiendo un B de 128 y b de 64. Estas versiones de los programas fueros dejados para realizar tests por separado, con su propio main cada uno.
 - Para tratar con los numeros aleatorios se utiliza la semilla time(NULL)
 
