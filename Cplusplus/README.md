@@ -1,5 +1,5 @@
 # CC4102-2 Diseño y Análisis de Algoritmos
-# Tarea 1
+# Tarea 1: M-Tree
 
 ### Integrantes:
 - Juan Luis Cid Lagos
@@ -34,13 +34,13 @@ Los programas Mtree.cpp, cp.cpp y ss.cpp, corresponden a las estructuras ocupada
   - MTree para guardar una lista de Entrys (Nodo).
   - Query para representar una busqueda de un punto con un radio.
   - Cluster para realizar procesos de clusters en vectores de puntos.
-  - Las búsquedas se implementan en la clase de MTree y ademas, se sobrecarga el operador * en Point para calcular en lo posible la distancia al cuadrado, con el fin de optimizar los cálculos que solo requieren comparar y no guardar la distancia como tal.
+  - Las búsquedas se implementan en la clase de MTree y además, se sobrecarga el operador * en Point para calcular en lo posible la distancia al cuadrado, con el fin de optimizar los cálculos que solo requieren comparar y no guardar la distancia como tal.
   
 - cp.cpp presenta el algoritmo Ciaccia-Patella utilizando las estructuras del Mtree.cpp.
 - ss.cpp presenta el algoritmo Sexton-Swinbank utilizando las estructuras del Mtree.cpp.
-- En ambos archivos se indica los tamaños de B = 4096 / sizeof(Entry), con un Entries de 32 bytes, consiguiendo un B de 128 entradas y b de 64 entradas. Estas versiones de los programas fueros dejados para realizar tests por separado, con su propio main cada uno.
-- Para tratar con los numeros aleatorios se utiliza la semilla time(NULL)
+- En ambos archivos se indica los tamaños de B = 4096 / sizeof(Entry), con un Entry de tamaño 32 bytes, consiguiendo un B de 128 entradas y b de 64 entradas. Estas versiones de los programas fueros dejados para realizar tests por separado, con su propio main cada uno.
+- Para tratar con los números aleatorios se utiliza la semilla time(NULL)
 
 ## Versiones finales:
 
-Para la versión final, junto con los experimentos, se unificaron algoritmos y estructuras en un solo archivo (algoritmos.cpp) para evitar errores de importación, así como el desconocimiento del lenguaje y el uso de encabezados para proyectos que importan un mismo paquete en varias instancias. En este mismo archivo se definen las constantes B y b igual que en la forma anterior, utilizando la misma semilla para los números aleatorios. Adicionalmente, se crea el archivo main.cpp que contiene las funciones que ayudan a calcular lo solicitado en la tarea, como los intervalos de confianza. También se implementan 2 métodos que ayudan a la experimentación iterativa, generando registros de tiempos de ejecución de construcción y búsqueda, dejando un registro en archivos por cada potencia de 2 en un formato CSV para facilitar la lectura de estos. En el main se lleva a cabo este experimento, definiendo iterativamente un vector de puntos y queries con las estructuras anteriormente descritas, realizando ambos algoritmos de forma consecutiva por iteración.
+Para la versión final, junto con los experimentos, se unificaron los algoritmos y estructuras en un solo archivo (algoritmos.cpp) para evitar errores de importación, esto dado por no tener un buen dominio del lenguaje C++ y por el uso de encabezados para proyectos que importan un mismo paquete en varias instancias. En este mismo archivo se definen las constantes B y b igual que en la forma anterior, utilizando la misma semilla para los números aleatorios. Adicionalmente, se crea el archivo main.cpp que contiene las funciones que ayudan a calcular lo solicitado en la tarea, como los intervalos de confianza. También se implementan 2 métodos que ayudan a la experimentación iterativa, generando registros de tiempos de ejecución de construcción y búsqueda, dejando un registro en archivos por cada potencia de 2 en un formato CSV para facilitar la lectura de estos. En el main se lleva a cabo este experimento, definiendo iterativamente un vector de puntos y queries con las estructuras anteriormente descritas, realizando ambos algoritmos de forma consecutiva por iteración.
