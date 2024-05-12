@@ -61,7 +61,7 @@ vector<Query> generateQuerys() {
     for (int i = 0; i < 100; i++) {
         double x = (double) rand() / RAND_MAX;
         double y = (double) rand() / RAND_MAX;
-        double r = (double) rand() / RAND_MAX;
+        double r = 0.02;
         querys.push_back(Query(Point(x, y), r));
     }
     return querys;
@@ -126,22 +126,23 @@ void testSS(vector<Point>& points, const vector<Query>& querys, ofstream& file) 
 int main() {
     srand(time(NULL));
 
-    // Potencias de 2 de inicio a fin (solo exponenetes)
-    int inicio = 6;
-    int fin = 7;
+    // Potencias de 2 de inicio a fin (solo exponentes)
+    int inicio = 13;
+    int fin = 15;
 
 
     // Para cada potencia de 2
     for (int i = inicio; i <= fin; i++) {
         int n = pow(2, i);
 
-        ofstream fileCP("CP_" + to_string(n) + ".txt", ios::app);
-        ofstream fileSS("SS_" + to_string(n) + ".txt", ios::app);
+        ofstream fileCP("CP_2^" + to_string(i) + ".csv", ios::app);
+        ofstream fileSS("SS_2^" + to_string(i) + ".csv", ios::app);
         fileCP << "MethodDuration,SearchTime,MeanTime,ConfidenceInterval_i,ConfidenceInterval_f" << endl;
         fileSS << "MethodDuration,SearchTime,MeanTime,ConfidenceInterval_i,ConfidenceInterval_f" << endl;
         
         // 100 iteraciones por cada potencia de 2
-        for (int j = 0; j < 100; j++) {
+        int iteraciones = 1;
+        for (int j = 0; j < iteraciones; j++) {
             vector<Point> points = generatePoint(n);
             vector<Query> querys = generateQuerys();
 

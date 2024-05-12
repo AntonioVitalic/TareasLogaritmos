@@ -49,7 +49,9 @@ public:
         int index = 0;
         double m = 2;
         for (int i = 0; i < points.size(); i++) {
-            if (*this * points[i] < m) {
+            double currentDistance = *this * points[i];
+            if (currentDistance < m) {
+                m = currentDistance;
                 index = i;
             }
         }
@@ -108,6 +110,7 @@ public:
                 return 1;
             }
         }
+        return 0;
     }
 
     vector<pair<Point,shared_ptr<MTree>>> searchByHeights(int h) {
@@ -399,6 +402,17 @@ shared_ptr<MTree> AlgoritmoCP(vector<Point>& points) {
     return T_sup;
 }
 
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+/*
+
+    Algoritmo SS
+
+*/
 
 pair<Cluster, Cluster> minMax(Cluster cuc) {
     Cluster c1, c2;
@@ -538,18 +552,6 @@ vector<Cluster> cluster(vector<Point>& Cin){
     // Paso 7: Retornar Cout
     return Cout;
 }
-
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////
-
-/*
-
-    Algoritmo SS
-
-*/
 
 shared_ptr<Entry> outputHoja(vector<Point>& Cin) {
     // Paso 1: Sea g el medoide de Cin. Sea r=0. Sea C = {} (nodo hoja)

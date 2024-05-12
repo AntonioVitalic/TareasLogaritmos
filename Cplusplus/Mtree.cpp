@@ -38,7 +38,9 @@ public:
         int index = 0;
         double m = 2;
         for (int i = 0; i < points.size(); i++) {
-            if (*this * points[i] < m) {
+            double currentDistance = *this * points[i];
+            if (currentDistance < m) {
+                m = currentDistance;
                 index = i;
             }
         }
