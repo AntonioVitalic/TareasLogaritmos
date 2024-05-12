@@ -1,4 +1,4 @@
-# Diseño y analisis de algoritmos
+# CC4102-2 Diseño y Análisis de Algoritmos
 # Tarea 1
 
 ### Integrantes:
@@ -26,7 +26,7 @@ La estructura se separa entre los archivos preeliminares y las versiones finales
 
 ### Versiones preeliminares:
 
-Los programas Mtree.cpp, cp.cpp y ss.cpp, corresponden a las estructuras ocupadas, el algoritmo CP, y el algoritmo SS respectivamente. Estos fueron desarrollados porseparado para mantener un orden y mejor compresion de lo que se hace.
+Los programas Mtree.cpp, cp.cpp y ss.cpp, corresponden a las estructuras ocupadas, el algoritmo Ciaccia-Patella (CP), y el algoritmo Sexton-Swinbank (SS) respectivamente. Estos fueron desarrollados por separado para mantener un orden y mejor comprensión de lo que se hace.
 
 - Mtree.cpp se definen las clases: 
   - Point para trabajar con puntos y operaciones de distancia.
@@ -34,12 +34,11 @@ Los programas Mtree.cpp, cp.cpp y ss.cpp, corresponden a las estructuras ocupada
   - MTree para guardar una lista de Entrys (Nodo).
   - Query para representar una busqueda de un punto con un radio.
   - Cluster para realizar procesos de clusters en vectores de puntos.
-  - 
-    Las busquedas se implementan en la clase de MTree y ademas, se sobrecarga el operador * en Point para calcular en lo posible la distancia al cuadrado, con el fin de optimizar los calculos que solo requieren comparar y no guardar la distancia como tal.
+  - Las búsquedas se implementan en la clase de MTree y ademas, se sobrecarga el operador * en Point para calcular en lo posible la distancia al cuadrado, con el fin de optimizar los cálculos que solo requieren comparar y no guardar la distancia como tal.
   
-- cp.cpp presenta el algoritmo Ciaccia Patella utilizando las estructuras del Mtree.cpp.
-- ss.cpp presenta el algoritmo Sexton-Swingbank utilizando las estructuras del Mtree.cpp.
-- En ambos archivos se indica los tamaños de B = 4096 / sizeof(Entry), con un Entries de 32bytes, consiguiendo un B de 128 y b de 64. Estas versiones de los programas fueros dejados para realizar tests por separado, con su propio main cada uno.
+- cp.cpp presenta el algoritmo Ciaccia-Patella utilizando las estructuras del Mtree.cpp.
+- ss.cpp presenta el algoritmo Sexton-Swinbank utilizando las estructuras del Mtree.cpp.
+- En ambos archivos se indica los tamaños de B = 4096 / sizeof(Entry), con un Entries de 32 bytes, consiguiendo un B de 128 entradas y b de 64 entradas. Estas versiones de los programas fueros dejados para realizar tests por separado, con su propio main cada uno.
 - Para tratar con los numeros aleatorios se utiliza la semilla time(NULL)
 
 ## Versiones finales:
