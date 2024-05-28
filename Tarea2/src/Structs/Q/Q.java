@@ -15,5 +15,9 @@ public interface Q {
     public void addPair(Pair<Double, Node> pair);
     public Pair<Double, Node> getMin();
     public Node getNode(Integer key);
-    public void decreaseKey();
+    public void decreaseKey(Node node, Double newDistance);    
 }
+
+
+// La idea es que de la interface Q, se creen las clases QFib extends Q y QHeap extends Q, de modo que
+// en estas clases se implementen los métodos (pueden crearse más métodos aquí, de ser necesario)
