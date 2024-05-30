@@ -2,10 +2,13 @@ package Dijkstra;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import Structs.Graph.Graph;
 import Structs.Graph.Node;
 import Structs.Q.Q;
+import Structs.Q.QHeap;
+import Structs.Q.QFib;
 import Utils.Pair;
 
 // Algoritmo de Dijkstra
@@ -45,19 +48,52 @@ public class Dijkstra {
         TODO: Cambiar el retorno cuando conozca de que son las listas 
         (Pair<List<Distancias>, List<Previos>>)
     */ 
-    public <T extends Q> Q algoritmo(Graph grafo, Node raiz) {
+    public static Q heap(Graph grafo, Node raiz) {
         // Paso 1: Crear arreglos de distancias y previos
-        Integer n = grafo.size(); // Tamaño del grafo
+        int n = grafo.size(); // Tamaño del grafo
         List<Double> distancias = new ArrayList<Double>(n);
         List<Node> previos = new ArrayList<Node>(n);
 
         // Paso 2: Crear Q
-        Q q = null;
+        Q q = new QHeap(n);
 
         // Paso 3: Agregar par (0, raiz) a Q
-        q.addPair(new Pair<Double, Node>(0, raiz));
+        q.addPair(new Pair<Double, Node>(0.0, raiz));
 
+        // Paso 4: Por cada nodo != raiz, agregar par (infinito, nodo) a Q
+        for (Node node : grafo.getNodes()) {
+            if (node != raiz) {
+                distancias.add(Double.POSITIVE_INFINITY);
+                previos.add(null);
+                q.addPair(new Pair<Double, Node>(Double.POSITIVE_INFINITY, node));
+            }
+        }
         
+
+        // Paso 5: Heapify (arriba)
+
+        // Paso 6: Mientras que Q no esté vacío
+        while (!q.isEmpty()) {
+            // Obtener el par (d, v) de menor distancia
+            Pair<Double, Node> par = q.extractMin();
+
+            Double dv = distancias.get(q.indexOf(par.getSecond()));
+
+            // Por cada vecino u de v:
+            for (Map.Entry<Node, Double> entry : par.getSecond().getEdges().entrySet()) {
+                Node u = entry.getKey();
+                Double weight = entry.getValue();
+                
+                // Si la distancia de u es mayor a la distancia de v + peso de la arista (u, v)
+                // Actualizar la distancia de u, guardar v como previo de u y actualizar la distancia de u en Q
+                Double du = distancias.get(q.indexOf(u));
+                if (du > dv + weight) {
+                    distancias.set(q.indexOf(u), dv + weight);
+                    previos.set(q.indexOf(u), par.getSecond());
+                    q.decreaseKey(u, dv + weight);
+                }
+            }
+        }
 
         return q;
     }

@@ -11,4 +11,11 @@ public class Graph {
         return nodes.size();
     }
 
+    public void addNode(Node node) {
+        nodes.add(node);
+    }
+
+    public Set<Node> getNodes() {
+        return nodes;
+    }
 }

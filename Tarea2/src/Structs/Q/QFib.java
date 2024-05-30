@@ -11,12 +11,13 @@ import Utils.Pair;
     además de poder modificar su distancia con la función decreaseKey (en el contexto del
     algoritmo, no existe la necesidad de aumentar la distancia, solo de reducirla).
  */
-public interface Q {
-    public void addPair(Pair<Double, Node> pair);
-    public Pair<Double, Node> getMin();
-    public Node getNode(Integer key);
-    public void decreaseKey();
-}
+// public interface Q {
+//     public boolean isEmpty();
+//     public int indexOf(Node node);
+//     public void addPair(Pair<Double, Node> pair);
+//     public Pair<Double, Node> extractMin();
+//     public void decreaseKey(Node node, Double newDistance);
+// }
 
 
 // La idea es que de la interface Q, se creen las clases QFib extends Q y QHeap extends Q, de modo que
@@ -37,9 +38,9 @@ public class QFib implements Q{
     }
 
     @Override
-    public void getMin() {
+    public void extractMin() {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getMin'");
+        throw new UnsupportedOperationException("Unimplemented method 'extractMin'");
     }
 
     @Override

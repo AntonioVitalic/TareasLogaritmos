@@ -16,7 +16,7 @@ import java.util.Map;
  */
 // public interface Q {
 //     public void addPair(Pair<Double, Node> pair);
-//     public Pair<Double, Node> getMin();
+//     public Pair<Double, Node> extractMin();
 //     public Node getNode(Double key);
 //     public void decreaseKey();
 // }
@@ -29,80 +29,54 @@ import java.util.Map;
 
 public class QHeap implements Q {
     private ArrayList<Pair<Double, Node>> heap;
-    private Map<Node, Integer> nodeToHeapIndex;
 
-    public QHeap(ArrayList<Pair<Double, Node>> elements) {
-        this.heap = new ArrayList<>(elements.size());
-        this.nodeToHeapIndex = new HashMap<>();
-        buildHeap(elements);
+    public QHeap(int size) {
+        this.heap = new ArrayList<>(size);
     }
 
-    private void buildHeap(ArrayList<Pair<Double, Node>> elements) {
-        int n = elements.size();
-        for (int i = 0; i < n; i++) {
-            heap.add(elements.get(i));
-            nodeToHeapIndex.put(elements.get(i).getSecond(), i);
-        }
-        for (int i = (n / 2) - 1; i >= 0; i--) {
-            heapifyDown(i);
-        }
+    public boolean isEmpty() {
+        return heap.isEmpty();
+    }
+
+    public int indexOf(Node node) {
+        return heap.indexOf(node.getPair());
     }
 
     @Override
     public void addPair(Pair<Double, Node> pair) {
+        pair.getSecond().setPair(pair);
         heap.add(pair);
-        int index = heap.size() - 1;
-        nodeToHeapIndex.put(pair.getSecond(), index);
-        heapifyUp(index);
     }
 
     @Override
-    public Pair<Double, Node> getMin() {
+    public Pair<Double, Node> extractMin() {
         if (heap.isEmpty()) return null;
+        // Extraer el minimo asumiendo que el heap es min-heap
+        // y actualizar los indices
+
         Pair<Double, Node> min = heap.get(0);
-        int lastIndex = heap.size() - 1;
-        swap(0, lastIndex);
-        heap.remove(lastIndex);
-        nodeToHeapIndex.remove(min.getSecond());
-        if (!heap.isEmpty()) {
-            heapifyDown(0);
-        }
+        heap.set(0, heap.get(heap.size() - 1));
+        heap.remove(heap.size() - 1);
+        heapify();
+
         return min;
     }
 
-    @Override
-    public void decreaseKey(Node node, Double newDistance) {
-        Integer index = nodeToHeapIndex.get(node);
-        if (index != null && newDistance < heap.get(index).getFirst()) {
-            heap.set(index, new Pair<>(newDistance, node));
-            heapifyUp(index);
-        }
-    }
-
-    private void heapifyUp(int index) {
-        while (index > 0) {
-            int parentIndex = (index - 1) / 2;
-            if (heap.get(parentIndex).getFirst() > heap.get(index).getFirst()) {
-                swap(parentIndex, index);
-                index = parentIndex;
-            } else {
-                break;
-            }
-        }
-    }
-
-    private void heapifyDown(int index) {
-        int size = heap.size();
+    private void heapify() {
+        int index = 0;
         while (true) {
-            int leftIndex = 2 * index + 1;
-            int rightIndex = 2 * index + 2;
+            int left = 2 * index + 1;
+            int right = 2 * index + 2;
             int smallest = index;
-            if (leftIndex < size && heap.get(leftIndex).getFirst() < heap.get(smallest).getFirst()) {
-                smallest = leftIndex;
+
+            if (left < heap.size() && heap.get(left).getFirst() < heap.get(smallest).getFirst()) {
+                smallest = left;
             }
-            if (rightIndex < size && heap.get(rightIndex).getFirst() < heap.get(smallest).getFirst()) {
-                smallest = rightIndex;
+
+            if (right < heap.size() && heap.get(right).getFirst() < heap.get(smallest).getFirst()) {
+                smallest = right;
             }
+
             if (smallest != index) {
                 swap(index, smallest);
                 index = smallest;
@@ -112,11 +86,25 @@ public class QHeap implements Q {
         }
     }
 
+    @Override
+    public void decreaseKey(Node node, Double newDistance) {
+        int index = heap.indexOf(node.getPair());
+        heap.get(index).setFirst(newDistance);
+
+        while (index > 0 && heap.get(getParent(index)).getFirst() > heap.get(index).getFirst()) {
+            swap(index, getParent(index));
+            index = getParent(index);
+        }
+    }
+
+    private int getParent(int i) {
+        System.out.println("a");
+        return (i - 1) / 2;
+    }
+
     private void swap(int i, int j) {
         Pair<Double, Node> temp = heap.get(i);
         heap.set(i, heap.get(j));
         heap.set(j, temp);
-        nodeToHeapIndex.put(heap.get(i).getSecond(), i);
-        nodeToHeapIndex.put(heap.get(j).getSecond(), j);
     }
 }

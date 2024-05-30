@@ -12,10 +12,11 @@ import Utils.Pair;
     algoritmo, no existe la necesidad de aumentar la distancia, solo de reducirla).
  */
 public interface Q {
+    public boolean isEmpty();
+    public int indexOf(Node node);
     public void addPair(Pair<Double, Node> pair);
-    public Pair<Double, Node> getMin();
-    public Node getNode(Integer key);
-    public void decreaseKey(Node node, Double newDistance);    
+    public Pair<Double, Node> extractMin();
+    public void decreaseKey(Node node, Double newDistance);
 }
 
 
