@@ -1,11 +1,13 @@
 package algoritmo;
 
+import structs.q.QFib;
 import structs.q.QHeap;
 import structs.graph.Graph;
 
 public class Dijkstra {
     
-    public static void heap(Graph graph, int root) {
+    // Método para ejecutar Dijkstra usando QHeap
+    public static void heapHeap(Graph graph, int root) {
         int n = graph.size;
         // Paso 1: Creacion de arreglos de distancia y previos |V|
         double[] dist = new double[n];
@@ -40,6 +42,45 @@ public class Dijkstra {
                     dist[v] = dist[u] + w;
                     prev[v] = u;
                     q.decreaseKey(v, dist[v]);
+                }
+            }
+        }
+    }
+
+    // Método para ejecutar Dijkstra usando QFib
+    public static void heapFib(Graph graph, int root) {
+        int n = graph.size; // Asume que graph.size retorna el número total de nodos
+        double[] dist = new double[n];
+        int[] prev = new int[n];
+
+        // Crear QFib específicamente
+        QFib q = new QFib(n);
+
+        // Inicializar distancias y previos
+        for (int i = 0; i < n; i++) {
+            dist[i] = Double.POSITIVE_INFINITY;
+            prev[i] = -1;
+        }
+        dist[root] = 0;
+        q.add(graph.nodes[root], 0);  // Añadir el nodo raíz con distancia 0
+
+        // Mientras que la cola de prioridad no esté vacía
+        while (!q.isEmpty()) {
+            int u = q.extractMin();  // u es ahora el índice del nodo con la mínima distancia
+            if (dist[u] == Double.POSITIVE_INFINITY) {
+                break;  // Todos los nodos restantes son inaccesibles desde la raíz
+            }
+
+            // Iterar sobre cada adyacente v de u
+            for (int i = 0; i < graph.nodes[u].adjList.size(); i++) {
+                int v = graph.nodes[u].adjList.get(i);
+                double weight = graph.nodes[u].costList.get(i);
+
+                // Relajar el borde (u, v)
+                if (dist[u] + weight < dist[v]) {
+                    dist[v] = dist[u] + weight;
+                    prev[v] = u;
+                    q.decreaseKey(graph.nodes[v], dist[v]);  // Asegúrate de que q.decreaseKey espera un Node y un double
                 }
             }
         }
