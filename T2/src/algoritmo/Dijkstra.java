@@ -54,7 +54,7 @@ public class Dijkstra {
         int[] prev = new int[n];
 
         // Crear QFib específicamente
-        QFib q = new QFib(n);
+        QFib q = new QFib();
 
         // Inicializar distancias y previos
         for (int i = 0; i < n; i++) {

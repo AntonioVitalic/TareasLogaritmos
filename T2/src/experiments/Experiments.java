@@ -21,9 +21,9 @@ public class Experiments {
         for (int i : verticesLevels) {
             // Archivo por cada nivel de vertices
             String filenameHeap = "results_heap_(" + i + ").csv";
+            setupCSV(filenameHeap);
 
             try (PrintWriter outHeap = new PrintWriter(new FileWriter(filenameHeap))) {
-                outHeap.println("Edges,TimeH,TimeF");
                 for (int j : edgesPowers) {
                     // Arreglos para guardar los tiempos de ejecución
                     ArrayList<Double> timesHResults = new ArrayList<>();
@@ -142,13 +142,14 @@ public class Experiments {
     // }
 
 
-    // private static void setupCSV(String filename) {
-    // File file = new File(filename);
-    // if (!file.exists() || file.length() == 0) {
-    //     try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
-    //         out.println("Vertices,Edges,Time");
-    //     } catch (IOException e) {
-    //         System.err.println("Error setting up CSV file: " + e.getMessage());
-    //     }
-    // }
+    private static void setupCSV(String filename) {
+        File file = new File(filename);
+        if (!file.exists() || file.length() == 0) {
+            try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
+                out.println("Edges, TimeHeap, TimeFib");
+            } catch (IOException e) {
+                System.err.println("Error setting up CSV file: " + e.getMessage());
+            }
+        }
+    }
 }
