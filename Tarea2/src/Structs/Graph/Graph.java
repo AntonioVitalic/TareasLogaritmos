@@ -1,21 +1,21 @@
-package Structs.Graph;
-
-import java.util.HashSet;
-import java.util.Set;
+package structs.graph;
 
 public class Graph {
-    
-    private Set<Node> nodes = new HashSet<Node>();
+    public Node[] nodes; // Lista de nodos enumerados de 0 a n-1
+    public int size; // Cantidad de nodos actuales
+    public int maxSize; // Cantidad maxima de nodos
 
-    public Integer size() {
-        return nodes.size();
+    public Graph(int maxSize) { 
+        this.maxSize = maxSize; 
+        this.size = 0;
+        this.nodes = new Node[maxSize];
     }
 
     public void addNode(Node node) {
-        nodes.add(node);
-    }
-
-    public Set<Node> getNodes() {
-        return nodes;
+        if (size == maxSize) { // Si el grafo esta lleno tira error
+            throw new RuntimeException("Graph is full");
+        }
+        nodes[size] = node;
+        size++;
     }
 }

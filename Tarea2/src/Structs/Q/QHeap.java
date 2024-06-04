@@ -1,110 +1,91 @@
-package Structs.Q;
+package structs.q;
 
-import Structs.Graph.Node;
-import Utils.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+public class QHeap {
+    private int[] heap; // Heap de los nodos (solo tags)
+    private int[] pos; // Posicion de los nodos en el heap (el indice de cada posicion es el tag del nodo, ej: pos[3] = 5 significa que el nodo 3 esta en la posicion 5 del heap)
+    private double[] dist; // Distancia de cada nodo
+    private int size; // Tamaño del heap
 
-/**
- * Definimos una estructura Q permita:
-    • Almacenar pares de la forma (distancia, nodo).
-    • Obtener y eliminar el par con menor distancia.
-    • Tener acceso directo desde cada nodo (por medio de un puntero) al par que lo representa,
-    además de poder modificar su distancia con la función decreaseKey (en el contexto del
-    algoritmo, no existe la necesidad de aumentar la distancia, solo de reducirla).
- */
-// public interface Q {
-//     public void addPair(Pair<Double, Node> pair);
-//     public Pair<Double, Node> extractMin();
-//     public Node getNode(Double key);
-//     public void decreaseKey();
-// }
+    public QHeap(int n) { // Se inicializa con el tamaño de la cantidad de nodos
+        heap = new int[n];
+        pos = new int[n];
+        dist = new double[n];
+        size = 0;
+    }
 
-// Algoritmo 1: Dijkstra con Heap
-// Como estructura Q de nombre QHeap, se utiliza un Heap como cola de prioridad, este debe soportar las funcionalidades
-// mencionadas en la descripción del algoritmo, y que se construya en tiempo lineal. En este
-// primer algoritmo, para la función decreaseKey se espera un tiempo logarítmico, en el que actualizar
-// un elemento de Q reordena la estructura del árbol.
+    public void add(int node, double d) {
+        heap[size] = node;
+        pos[node] = size;
+        dist[size] = d;
+        size++;
+    }
 
-public class QHeap implements Q {
-    private ArrayList<Pair<Double, Node>> heap;
+    public int extractMin() {
+        if (size == 0) {
+            return -1;
+        }
+        int min = heap[0]; // Nodo con la menor distancia (por estructura heap)
+        heap[0] = heap[size - 1]; // Se coloca el ultimo nodo en la raiz
+        pos[heap[0]] = 0; // Se actualiza la posicion del nodo en el heap
+        dist[0] = dist[size - 1]; // Se coloca la distancia del ultimo nodo en la raiz
+        size--; // Se reduce el tamaño del heap
+        heapify(0); // Se reordena el heap
+        return min; // Se retorna el nodo con la menor distancia
+    }
 
-    public QHeap(int size) {
-        this.heap = new ArrayList<>(size);
+    public void decreaseKey(int node, double d) {
+        int i = pos[node]; // Posicion del nodo en el heap
+        dist[i] = d; // Se actualiza la distancia del nodo
+        while (i > 0 && dist[parent(i)] > dist[i]) {
+            swap(i, parent(i)); // Se intercambia el nodo con su padre (swap reordena tambien las posiciones)
+            i = parent(i); // Se actualiza la posicion del nodo
+        }
     }
 
     public boolean isEmpty() {
-        return heap.isEmpty();
+        return size == 0;
     }
 
-    public int indexOf(Node node) {
-        return heap.indexOf(node.getPair());
-    }
+    // Funcionalidades internas
 
-    @Override
-    public void addPair(Pair<Double, Node> pair) {
-        pair.getSecond().setPair(pair);
-        heap.add(pair);
-    }
-
-    @Override
-    public Pair<Double, Node> extractMin() {
-        if (heap.isEmpty()) return null;
-        // Extraer el minimo asumiendo que el heap es min-heap
-        // y actualizar los indices
-
-        Pair<Double, Node> min = heap.get(0);
-        heap.set(0, heap.get(heap.size() - 1));
-        heap.remove(heap.size() - 1);
-        heapify();
-
-        return min;
-    }
-
-    private void heapify() {
-        int index = 0;
-        while (true) {
-            int left = 2 * index + 1;
-            int right = 2 * index + 2;
-            int smallest = index;
-
-            if (left < heap.size() && heap.get(left).getFirst() < heap.get(smallest).getFirst()) {
-                smallest = left;
-            }
-
-            if (right < heap.size() && heap.get(right).getFirst() < heap.get(smallest).getFirst()) {
-                smallest = right;
-            }
-
-            if (smallest != index) {
-                swap(index, smallest);
-                index = smallest;
-            } else {
-                break;
-            }
-        }
-    }
-
-    @Override
-    public void decreaseKey(Node node, Double newDistance) {
-        int index = heap.indexOf(node.getPair());
-        heap.get(index).setFirst(newDistance);
-
-        while (index > 0 && heap.get(getParent(index)).getFirst() > heap.get(index).getFirst()) {
-            swap(index, getParent(index));
-            index = getParent(index);
-        }
-    }
-
-    private int getParent(int i) {
-        System.out.println("a");
+    // Accesos al indice del padre, hijo izquierdo y hijo derecho
+    private int parent(int i) {
         return (i - 1) / 2;
     }
 
+    private int left(int i) {
+        return 2 * i + 1;
+    }
+
+    private int right(int i) {
+        return 2 * i + 2;
+    }
+
+    // Funciones de mantenimiento del heap
+    private void heapify(int i) {
+        int l = left(i);
+        int r = right(i);
+        int smallest = i;
+        if (l < size && dist[l] < dist[i]) {
+            smallest = l;
+        }
+        if (r < size && dist[r] < dist[smallest]) {
+            smallest = r;
+        }
+        if (smallest != i) {
+            swap(i, smallest);
+            heapify(smallest);
+        }
+    }
+
     private void swap(int i, int j) {
-        Pair<Double, Node> temp = heap.get(i);
-        heap.set(i, heap.get(j));
-        heap.set(j, temp);
+        int temp1 = heap[i];
+        heap[i] = heap[j];
+        heap[j] = temp1;
+        double temp2 = dist[i];
+        dist[i] = dist[j];
+        dist[j] = temp2;
+        pos[heap[i]] = i;
+        pos[heap[j]] = j;
     }
 }

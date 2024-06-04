@@ -1,38 +1,19 @@
-package Structs.Graph;
-
+package structs.graph;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import Utils.Pair;
 
 public class Node {
+    public int id; // Identificador del nodo (tag)
+    public ArrayList<Integer> adjList; // Lista de adyacencia (como lista por ser dinamica)
+    public ArrayList<Double> costList; // Lista de costos, de tipo double debido a que se generan pesos aleatorios y uniformes en el rango (0, 1]
 
-    // TODO: Refactorizar todos los edges en list
-    
-    private List<Pair<Double, Node>> edges = new ArrayList<>();
-    private Pair<Double, Node> pair;
-    
-    public void addEdge(Node node, Double weight) {
-        edges.put(node, weight);
+    public Node(int id) {
+        this.id = id;
+        this.adjList = new ArrayList<>();
+        this.costList = new ArrayList<>();
     }
 
-    public List<Pair<Double, Node>> getEdges() {
-        return edges;
-    }
-
-    public void delete(){
-        for (Pair<Double, Node> edge : edges) {
-            edge.getSecond().getEdges().remove(this);
-        }
-    }
-
-    public void setPair(Pair<Double, Node> pair) {
-        this.pair = pair;
-    }
-
-    public Pair<Double, Node> getPair() {
-        return pair;
+    public void addEdge(int to, double d) {
+        adjList.add(to);
+        costList.add(d);
     }
 }

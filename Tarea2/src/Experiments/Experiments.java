@@ -1,82 +1,112 @@
-package Experiments;
+package experiments;
 
+import structs.graph.Graph;
+import structs.graph.Node;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
-import Structs.Graph.Graph;
-import Structs.Graph.Node;
-import Structs.Q.Q;
-import Dijkstra.Dijkstra;
+import java.util.Locale;
+
+import algoritmo.Dijkstra;
 
 public class Experiments {
-    
-    public static void main(String[] args) {
-        int[] verticesLevels = {10, 12, 14};  // i ∈ {10, 12, 14}
-        int[] edgesPowers = {16, 18, 20, 22}; // j ∈ {16, 18, 20, 22}
 
-        for (int vExp : verticesLevels) {
-            int vertices = (int) Math.pow(2, vExp);
-            for (int eExp : edgesPowers) {
-                int edges = (int) Math.pow(2, eExp);
-                runExperiment(vertices, edges);
+    public static void main(String[] args) {
+        int[] verticesLevels = {10, 12, 14};
+        int[] edgesPowers = {16, 17, 18, 19, 20, 21, 22};
+
+        for (int i : verticesLevels) {
+            // Archivo por cada nivel de vertices
+            String filenameHeap = "results_heap_(" + i + ").csv";
+            setupCSV(filenameHeap);
+
+            for (int j : edgesPowers) {
+                // Arreglos para guardar los tiempos de ejecución
+                ArrayList<Double> timesHResults = new ArrayList<>();
+                ArrayList<Double> timesFResults = new ArrayList<>();
+                // 50 iteraciones por cada combinación de vertices y aristas
+                int vertices = (int) Math.pow(2, i);
+                int edges = (int) Math.pow(2, j);
+                for (int k = 0; k < 50; k++) {
+                    // runExperiments((int) Math.pow(2, i), (int) Math.pow(2, j), i, j);
+                    double timeH = runExperiments(vertices, edges, 0);
+                    double timeF = runExperiments(vertices, edges, 1);
+                    timesHResults.add(timeH);
+                    timesFResults.add(timeF);
+                }
+                // Calcular promedio de tiempos
+                double avgTimeH = timesHResults.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+                double avgTimeF = timesFResults.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+                // Escibir resultados en archivo
+                writeResults(filenameHeap, edges, avgTimeH, avgTimeF);
             }
-        }
+        }  
+    }
+    
+    private static double runExperiments(int vertices, int edges, int algorithm) {
+        Graph graph = generateGraph(vertices, edges);
+        return measureTime(graph, algorithm);
     }
 
-    private static void runExperiment(int vertices, int edges) {
-        List<Double> resultsHeap = new ArrayList<>();
-        List<Double> resultsFib = new ArrayList<>();
-
-        for (int trial = 0; trial < 50; trial++) {
-            Graph graph = generateGraph(vertices, edges);
-            Node startNode = graph.getNodes().iterator().next();
-
-            // Dijkstra with Heap
-            long start = System.nanoTime();
-            Q qHeap = Dijkstra.heap(graph, startNode);
-            long end = System.nanoTime();
-            resultsHeap.add((end - start) / 1e9); // convert to seconds
-
-            // // Dijkstra with Fibonacci Heap
-            // Q qFib = new QFib(vertices);
-            // start = System.nanoTime();
-            // Dijkstra.heap(graph, startNode, qFib);
-            // end = System.nanoTime();
-            // resultsFib.add((end - start) / 1e9); // convert to seconds
+    private static double measureTime(Graph graph, int algorithm) {
+        long startTime, endTime;
+        startTime = System.nanoTime();
+        if (algorithm == 0) {
+            Dijkstra.heapHeap(graph, 0);
+        } else if (algorithm == 1){
+            Dijkstra.heapFib(graph, 0);
         }
+        endTime = System.nanoTime();
+        return (endTime - startTime) / 1e9;
+    }
 
-        // Output the results
-        System.out.println("Heap results: " + resultsHeap);
-        System.out.println("Fibonacci Heap results: " + resultsFib);
-        // TODO: Add further analysis, possibly exporting data or generating charts
+    private static void writeResults(String filename, int edges, double timeH, double timeF) {
+        try (PrintWriter out = new PrintWriter(new FileWriter(filename, true))) {
+            out.printf(Locale.US, "%d,%.9f,%.9f\n", edges, timeH, timeF);
+        } catch (IOException e) {
+            System.err.println("Error writing to CSV file: " + e.getMessage());
+        }
     }
 
     private static Graph generateGraph(int vertices, int edges) {
-        Graph graph = new Graph();
-        Random rand = new Random();
+        Graph graph = new Graph(vertices);
+        long seed = 123456789;
+        Random random = new Random(seed);
 
-        Node[] allNodes = new Node[vertices];
+        // Añadir nodos y aristas
         for (int i = 0; i < vertices; i++) {
-            allNodes[i] = new Node();
-            graph.addNode(allNodes[i]);
+            graph.addNode(new Node(i));
             if (i > 0) {
-                int connectTo = rand.nextInt(i);
-                double weight = rand.nextDouble();
-                allNodes[i].addEdge(allNodes[connectTo], weight);
-                allNodes[connectTo].addEdge(allNodes[i], weight);  // For undirected graph
+                int to = random.nextInt(i);
+                graph.nodes[i].addEdge(to, 1 - random.nextDouble()); // nextDouble va de [0,1) y queremos (0,1]
+                graph.nodes[to].addEdge(i, 1 - random.nextDouble()); // Hacerlo no dirigido
             }
         }
 
-        // Add remaining edges
-        int extraEdges = edges - (vertices - 1);
-        for (int j = 0; j < extraEdges; j++) {
-            int from = rand.nextInt(vertices);
-            int to = rand.nextInt(vertices);
-            double weight = rand.nextDouble();
-            allNodes[from].addEdge(allNodes[to], weight);
-            allNodes[to].addEdge(allNodes[from], weight);  // For undirected graph
+        // Añadir aristas adicionales
+        for (int i = 0; i < edges - (vertices - 1); i++) {
+            int from = random.nextInt(vertices);
+            int to = random.nextInt(vertices);
+            double weight = 1 - random.nextDouble();
+            graph.nodes[from].addEdge(to, weight);
+            graph.nodes[to].addEdge(from, weight);
         }
 
         return graph;
+    }
+
+    private static void setupCSV(String filename) {
+        File file = new File(filename);
+        if (!file.exists() || file.length() == 0) {
+            try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
+                out.println("Edges, TimeHeap, TimeFib");
+            } catch (IOException e) {
+                System.err.println("Error setting up CSV file: " + e.getMessage());
+            }
+        }
     }
 }
