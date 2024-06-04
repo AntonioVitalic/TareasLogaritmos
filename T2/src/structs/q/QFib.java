@@ -9,7 +9,7 @@ public class QFib {
     private FibNode min;
     private int size;
 
-    public QFib(int n) { // Falta implementar el int n en el constructor
+    public QFib() { // aqui habia un int n como argumento del constructor, no es necesario implementarlo para construir la cola
         this.roots = new ArrayList<>();
         this.min = null;
         this.size = 0;
