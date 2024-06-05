@@ -13,6 +13,9 @@ public class QHeap {
         size = 0;
     }
 
+    /*
+     * Método para agregar un nodo a la cola de prioridad
+     */
     public void add(int node, double d) {
         heap[size] = node;
         pos[node] = size;
@@ -20,19 +23,25 @@ public class QHeap {
         size++;
     }
 
+    /*
+     * Método para extraer el nodo con la menor prioridad
+     */
     public int extractMin() {
         if (size == 0) {
             return -1;
         }
-        int min = heap[0]; // Nodo con la menor distancia (por estructura heap)
-        heap[0] = heap[size - 1]; // Se coloca el ultimo nodo en la raiz
-        pos[heap[0]] = 0; // Se actualiza la posicion del nodo en el heap
-        dist[0] = dist[size - 1]; // Se coloca la distancia del ultimo nodo en la raiz
-        size--; // Se reduce el tamaño del heap
-        heapify(0); // Se reordena el heap
-        return min; // Se retorna el nodo con la menor distancia
+        int min = heap[0];
+        heap[0] = heap[size - 1];
+        pos[heap[0]] = 0;
+        dist[0] = dist[size - 1];
+        size--;
+        heapify(0);
+        return min;
     }
 
+    /*
+     * Método para disminuir la prioridad de un nodo
+     */
     public void decreaseKey(int node, double d) {
         int i = pos[node]; // Posicion del nodo en el heap
         dist[i] = d; // Se actualiza la distancia del nodo
@@ -42,26 +51,39 @@ public class QHeap {
         }
     }
 
+    /*
+     * Método para verificar si la cola de prioridad está vacía
+     */
     public boolean isEmpty() {
         return size == 0;
     }
 
     // Funcionalidades internas
 
-    // Accesos al indice del padre, hijo izquierdo y hijo derecho
+    /*
+     * Método para obtener el padre de un nodo
+     */
     private int parent(int i) {
         return (i - 1) / 2;
     }
 
+    /*
+     * Método para obtener los hijos de un nodo
+     */
     private int left(int i) {
         return 2 * i + 1;
     }
 
+    /*
+     * Método para obtener los hijos de un nodo
+     */
     private int right(int i) {
         return 2 * i + 2;
     }
 
-    // Funciones de mantenimiento del heap
+    /*
+     * Método para heapify
+     */
     private void heapify(int i) {
         int l = left(i);
         int r = right(i);
@@ -78,6 +100,9 @@ public class QHeap {
         }
     }
 
+    /*
+     * Método para intercambiar dos nodos
+     */
     private void swap(int i, int j) {
         int temp1 = heap[i];
         heap[i] = heap[j];

@@ -4,9 +4,16 @@ import structs.q.QFib;
 import structs.q.QHeap;
 import structs.graph.Graph;
 
+/*
+ * Clase que implementa el algoritmo de Dijkstra
+ */
 public class Dijkstra {
     
-    // Método para ejecutar Dijkstra usando QHeap
+    /*
+     * Método que implementa el algoritmo de Dijkstra usando un heap binario
+     * @param graph: grafo sobre el cual se ejecutará el algoritmo
+     * @param root: nodo raíz desde el cual se ejecutará el algoritmo
+     */
     public static void heapHeap(Graph graph, int root) {
         int n = graph.size;
         // Paso 1: Creacion de arreglos de distancia y previos |V|
@@ -47,40 +54,50 @@ public class Dijkstra {
         }
     }
 
-    // Método para ejecutar Dijkstra usando QFib
+    /*
+     * Método que implementa el algoritmo de Dijkstra usando un heap de Fibonacci
+     * @param graph: grafo sobre el cual se ejecutará el algoritmo
+     * @param root: nodo raíz desde el cual se ejecutará el algoritmo
+     */
     public static void heapFib(Graph graph, int root) {
-        int n = graph.size; // Asume que graph.size retorna el número total de nodos
+        int n = graph.size;
+        // Paso 1: Creacion de arreglos de distancia y previos |V|
         double[] dist = new double[n];
         int[] prev = new int[n];
 
-        // Crear QFib específicamente
-        QFib q = new QFib();
+        // Paso 2: Creacion de Q
+        QFib q = new QFib(n);
+        
+        // Paso 3: definir dist de raiz como 0 y su previo como -1
+        dist[root] = 0;
+        prev[root] = -1;
+        q.add(graph.nodes[root], 0);
 
-        // Inicializar distancias y previos
-        for (int i = 0; i < n; i++) {
+        // Paso 4: Inicializar distancias como infinito y previos como indefinidos
+        // agregar los pares (infinito, nodo) a Q
+        for (int i = 1; i < n; i++) {
             dist[i] = Double.POSITIVE_INFINITY;
             prev[i] = -1;
+            q.add(graph.nodes[i], Double.POSITIVE_INFINITY);
         }
-        dist[root] = 0;
-        q.add(graph.nodes[root], 0);  // Añadir el nodo raíz con distancia 0
 
-        // Mientras que la cola de prioridad no esté vacía
+        // Paso 6: Mientras Q no este vacio
         while (!q.isEmpty()) {
-            int u = q.extractMin();  // u es ahora el índice del nodo con la mínima distancia
+            // Paso 6.a: Extraer min de Q
+            int u = q.extractMin();
             if (dist[u] == Double.POSITIVE_INFINITY) {
                 break;  // Todos los nodos restantes son inaccesibles desde la raíz
             }
 
-            // Iterar sobre cada adyacente v de u
+            // Paso 6.b: Para cada vecino v de u
             for (int i = 0; i < graph.nodes[u].adjList.size(); i++) {
                 int v = graph.nodes[u].adjList.get(i);
                 double weight = graph.nodes[u].costList.get(i);
 
-                // Relajar el borde (u, v)
                 if (dist[u] + weight < dist[v]) {
                     dist[v] = dist[u] + weight;
                     prev[v] = u;
-                    q.decreaseKey(graph.nodes[v], dist[v]);  // Asegúrate de que q.decreaseKey espera un Node y un double
+                    q.decreaseKey(graph.nodes[v], dist[v]);
                 }
             }
         }

@@ -4,17 +4,23 @@ import structs.graph.Node;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Clase que implementa una cola de prioridad con un heap de Fibonacci
+ */
 public class QFib {
-    private List<FibNode> roots;
-    private FibNode min;
-    private int size;
+    private List<FibNode> roots; // Lista de nodos raíz
+    private FibNode min; // Nodo mínimo
+    private int size; // Tamaño del heap
 
-    public QFib() { // aqui habia un int n como argumento del constructor, no es necesario implementarlo para construir la cola
-        this.roots = new ArrayList<>();
+    public QFib(int n) {
+        this.roots = new ArrayList<>(n);
         this.min = null;
         this.size = 0;
     }
 
+    /*
+     * Método para agregar un nodo a la cola de prioridad
+     */
     public void add(Node node, double priority) {
         FibNode newNode = new FibNode(node, priority);
         roots.add(newNode);
@@ -24,6 +30,9 @@ public class QFib {
         size++;
     }
 
+    /*
+     * Método para extraer el nodo con la menor prioridad
+     */
     public int extractMin() {
         if (min == null) return -1;
         int minNodeId = min.node.id;
@@ -49,6 +58,9 @@ public class QFib {
         return minNodeId;
     }
 
+    /*
+     * Método para disminuir la prioridad de un nodo
+     */
     public void decreaseKey(Node node, double newPriority) {
         for (FibNode fibNode : roots) {
             if (fibNode.node.equals(node)) {
@@ -66,6 +78,18 @@ public class QFib {
         }
     }
 
+    /*
+        * Método para verificar si la cola de prioridad está vacía
+        */
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    // Funcionalidades internas
+
+    /*
+     * Método para consolidar los nodos con el mismo grado
+     */
     private void consolidate() {
         List<FibNode> newRoots = new ArrayList<>();
         for (FibNode root : roots) {
@@ -89,6 +113,9 @@ public class QFib {
         roots = newRoots;
     }
 
+    /*
+     * Método para cortar un nodo de su padre
+     */
     private void cut(FibNode fibNode) {
         if (fibNode.parent != null) {
             fibNode.parent.child.remove(fibNode);
@@ -97,10 +124,9 @@ public class QFib {
         }
     }
 
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
+    /*
+     * Clase que representa un nodo en el heap de Fibonacci
+     */
     static class FibNode {
         Node node;
         double priority;

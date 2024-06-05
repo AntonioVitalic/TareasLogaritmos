@@ -13,6 +13,9 @@ import java.util.Locale;
 
 import algoritmo.Dijkstra;
 
+/*
+ * Clase que realiza experimentos para comparar los algoritmos de Dijkstra con heap binario y heap de Fibonacci
+ */
 public class Experiments {
 
     public static void main(String[] args) {
@@ -47,11 +50,24 @@ public class Experiments {
         }  
     }
     
+    /*
+     * Método para ejecutar los experimentos
+     * @param vertices: número de vértices del grafo
+     * @param edges: número de aristas del grafo
+     * @param algorithm: algoritmo a utilizar (0: heap binario, 1: heap de Fibonacci)
+     * @return tiempo de ejecución del algoritmo
+     */
     private static double runExperiments(int vertices, int edges, int algorithm) {
         Graph graph = generateGraph(vertices, edges);
         return measureTime(graph, algorithm);
     }
 
+    /*
+     * Método para medir el tiempo de ejecución de un algoritmo
+     * @param graph: grafo sobre el cual se ejecutará el algoritmo
+     * @param algorithm: algoritmo a utilizar (0: heap binario, 1: heap de Fibonacci)
+     * @return tiempo de ejecución del algoritmo
+     */
     private static double measureTime(Graph graph, int algorithm) {
         long startTime, endTime;
         startTime = System.nanoTime();
@@ -64,6 +80,13 @@ public class Experiments {
         return (endTime - startTime) / 1e9;
     }
 
+    /*
+     * Método para escribir los resultados en un archivo CSV
+     * @param filename: nombre del archivo
+     * @param edges: número de aristas del grafo
+     * @param timeH: tiempo de ejecución del algoritmo con heap binario
+     * @param timeF: tiempo de ejecución del algoritmo con heap de Fibonacci
+     */
     private static void writeResults(String filename, int edges, double timeH, double timeF) {
         try (PrintWriter out = new PrintWriter(new FileWriter(filename, true))) {
             out.printf(Locale.US, "%d,%.9f,%.9f\n", edges, timeH, timeF);
@@ -72,6 +95,12 @@ public class Experiments {
         }
     }
 
+    /*
+     * Método para generar un grafo aleatorio
+     * @param vertices: número de vértices del grafo
+     * @param edges: número de aristas del grafo
+     * @return grafo aleatorio
+     */
     private static Graph generateGraph(int vertices, int edges) {
         Graph graph = new Graph(vertices);
         long seed = 123456789;
@@ -99,6 +128,10 @@ public class Experiments {
         return graph;
     }
 
+    /*
+     * Método para configurar el archivo CSV
+     * @param filename: nombre del archivo
+     */
     private static void setupCSV(String filename) {
         File file = new File(filename);
         if (!file.exists() || file.length() == 0) {
