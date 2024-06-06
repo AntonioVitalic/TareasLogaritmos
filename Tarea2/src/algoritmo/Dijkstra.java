@@ -85,9 +85,6 @@ public class Dijkstra {
         while (!q.isEmpty()) {
             // Paso 6.a: Extraer min de Q
             int u = q.extractMin();
-            if (dist[u] == Double.POSITIVE_INFINITY) {
-                break;  // Todos los nodos restantes son inaccesibles desde la raíz
-            }
 
             // Paso 6.b: Para cada vecino v de u
             for (int i = 0; i < graph.nodes[u].adjList.size(); i++) {
