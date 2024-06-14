@@ -23,27 +23,31 @@ public class Experiments {
         int[] edgesPowers = {16, 17, 18, 19, 20, 21, 22};
 
         for (int i : verticesLevels) {
-            // Archivo por cada nivel de vertices
+            // Crear archivo por cada nivel de vertices
             String filenameHeap = "results_heap_(" + i + ").csv";
             setupCSV(filenameHeap);
 
             for (int j : edgesPowers) {
-                // Arreglos para guardar los tiempos de ejecución
+
+                // Crear arreglos para guardar los tiempos de ejecución
                 ArrayList<Double> timesHResults = new ArrayList<>();
                 ArrayList<Double> timesFResults = new ArrayList<>();
+
                 // 50 iteraciones por cada combinación de vertices y aristas
                 int vertices = (int) Math.pow(2, i);
                 int edges = (int) Math.pow(2, j);
+                
                 for (int k = 0; k < 50; k++) {
-                    // runExperiments((int) Math.pow(2, i), (int) Math.pow(2, j), i, j);
                     double timeH = runExperiments(vertices, edges, 0);
                     double timeF = runExperiments(vertices, edges, 1);
                     timesHResults.add(timeH);
                     timesFResults.add(timeF);
                 }
+
                 // Calcular promedio de tiempos
                 double avgTimeH = timesHResults.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 double avgTimeF = timesFResults.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+
                 // Escibir resultados en archivo
                 writeResults(filenameHeap, edges, avgTimeH, avgTimeF);
             }
@@ -120,7 +124,7 @@ public class Experiments {
         for (int i = 0; i < edges - (vertices - 1); i++) {
             int from = random.nextInt(vertices);
             int to = random.nextInt(vertices);
-            double weight = 1 - random.nextDouble();
+            double weight = 1 - random.nextDouble(); // nextDouble va de [0,1) y queremos (0,1]
             graph.nodes[from].addEdge(to, weight);
             graph.nodes[to].addEdge(from, weight);
         }
@@ -136,7 +140,7 @@ public class Experiments {
         File file = new File(filename);
         if (!file.exists() || file.length() == 0) {
             try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
-                out.println("Edges, TimeHeap, TimeFib");
+                out.println("Edges,TimeHeap,TimeFib");
             } catch (IOException e) {
                 System.err.println("Error setting up CSV file: " + e.getMessage());
             }

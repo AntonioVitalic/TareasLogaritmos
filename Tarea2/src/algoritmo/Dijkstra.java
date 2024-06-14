@@ -24,13 +24,13 @@ public class Dijkstra {
         QHeap q = new QHeap(n);
         
         // Paso 3: definir dist de raiz como 0 y su previo como -1
-        // agregar el par (0, raiz) a Q
+        // Agregar el par (0, raiz) a Q
         dist[0] = 0;
         prev[0] = -1;
         q.add(0, 0); // Nodo tag 0, distancia 0
 
         // Paso 4: Inicializar distancias como infinito y previos como indefinidos
-        // agregar los pares (infinito, nodo) a Q
+        // Agregar los pares (infinito, nodo) a Q
         for (int i = 1; i < n; i++) {
             dist[i] = Double.POSITIVE_INFINITY;
             prev[i] = -1;
@@ -68,13 +68,13 @@ public class Dijkstra {
         // Paso 2: Creacion de Q
         QFib q = new QFib(n);
         
-        // Paso 3: definir dist de raiz como 0 y su previo como -1
+        // Paso 3: Definir dist de raiz como 0 y su previo como -1
         dist[root] = 0;
         prev[root] = -1;
         q.add(graph.nodes[root], 0);
 
         // Paso 4: Inicializar distancias como infinito y previos como indefinidos
-        // agregar los pares (infinito, nodo) a Q
+        // Agregar los pares (infinito, nodo) a Q
         for (int i = 1; i < n; i++) {
             dist[i] = Double.POSITIVE_INFINITY;
             prev[i] = -1;
