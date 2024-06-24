@@ -14,6 +14,7 @@ El proceso de compilación y ejecución fue llevado a cabo en Windows 11, y Linu
 
 ### Compilación:
 $ javac .\experiments\Experiments.java (Windows)
+
 $ javac ./experiments/Experiments.java (Linux)
 
 ### Ejecución
