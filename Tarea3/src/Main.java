@@ -154,7 +154,7 @@ public class Main {
         System.out.println("Names: " + names.size());
         System.out.println("Films: " + films.size());
 
-        int[] N = {1024, 2048, 4096, 8192};
+        int[] N = {1024, 4096, 16384, 65536};
         float[] p = {0f, 0.25f, 0.5f, 0.75f, 1.0f};
 
         // Error

@@ -13,13 +13,13 @@ import com.google.common.hash.Hashing;
 public class BloomFilter {
     private int m; // Cantidad de bits
     private int k; // Cantidad de funciones hash
-    private int[] bits; // Arreglo de bits
+    private int[] M; // Arreglo M de bits
     private HashFunction[] hfs; // Funciones hash
 
     public BloomFilter(int m, int k) {
         this.m = m;
         this.k = k;
-        this.bits = new int[m];
+        this.M = new int[m];
         this.hfs = new HashFunction[k];
         for (int i = 0; i < k; i++) {
             hfs[i] = Hashing.murmur3_128(i);
@@ -34,7 +34,7 @@ public class BloomFilter {
         for (int i = 0; i < k; i++) {
             int hash = hfs[i].hashString(key, Charset.defaultCharset()).asInt();
             int pos = Math.abs(hash) % m;
-            bits[pos] = 1;
+            M[pos] = 1;
         }
     }
 
@@ -47,7 +47,7 @@ public class BloomFilter {
         for (int i = 0; i < k; i++) {
             int hash = hfs[i].hashString(key, Charset.defaultCharset()).asInt();
             int pos = Math.abs(hash) % m;
-            if (bits[pos] == 0) {
+            if (M[pos] == 0) {
                 return false;
             }
         }
